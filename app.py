@@ -286,13 +286,19 @@ st.markdown("""
 
 # -----------------------------------------------------------------------------
 # 資料庫初始化與資料就緒檢查 (HW10 規範)
+# @st.cache_resource 確保 Streamlit Cloud 冷啟動時只初始化一次
 # -----------------------------------------------------------------------------
-database.init_db()
-regions_in_db = database.get_distinct_regions()
-if not regions_in_db:
-    # 預設載入 HW10 海報標準 6 大分區一週資料
-    sample_records = cwa_service.generate_sample_forecast_data("2026-04-14")
-    database.insert_forecasts(sample_records)
+@st.cache_resource
+def _init_database():
+    """初始化資料庫並載入 HW10 基準預報資料 (僅執行一次)"""
+    database.init_db()
+    regions = database.get_distinct_regions()
+    if not regions:
+        sample_records = cwa_service.generate_sample_forecast_data("2026-04-14")
+        database.insert_forecasts(sample_records)
+    return True
+
+_init_database()
 
 
 # -----------------------------------------------------------------------------
