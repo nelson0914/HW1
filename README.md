@@ -1,147 +1,172 @@
-# 🌤️ Taiwan Weather & IoT Forecast 互動式氣象與物聯網預報系統
+# ⛅ HW10 Taiwan Weather Forecast 從氣象資料到互動式天氣預報應用程式
 
-> **碩士班 應用物聯網作業 | AI 創新微課程實作專案**  
-> **核心技術**：`CWA API` × `JSON` × `Python` × `SQLite` × `Streamlit` × `Folium` × `Edimax AirBox IoT`
+> **核心技術**：`CWA API` × `JSON` × `Python` × `SQLite` × `Streamlit`  
+> **核心資料流**：資料獲取 ➔ 資料分析 ➔ 資料儲存 ➔ 資料查詢 ➔ 視覺化展示  
+> **精神標語**：*用程式探索天氣，用資料看見台灣！*
 
 ---
 
 ## 📌 專案簡介 (Overview)
 
-本專案依據 **「AI 創新微課程 Taiwan Weather Forecast：從氣象資料到互動式天氣預報」** 的 24 步驟完整架構進行開發，結合中央氣象署 (CWA) 開放資料與台灣物聯網 (IoT) 即時環境感測大數據，建構全方位互動式氣象預報儀表板。
-
-### 🌟 核心特色
-
-1. **五大分區一週氣溫趨勢分析**：
-   - 支援 北部、中部、南部、東北部、東南部 等地區切換。
-   - 呈現最高氣溫 (MaxT) 與最低氣溫 (MinT) 折線圖、日夜溫差區間帶，以及資料庫詳細表格。
-   - 支援一鍵匯出 CSV 報表。
-2. **台灣互動式地圖視覺化 (Folium)**：
-   - 遵照微課程標準四段溫度色彩階層：
-     - `< 20°C`：藍色 (低溫/涼爽)
-     - `20 - 25°C`：綠色 (舒適氣溫)
-     - `25 - 30°C`：黃色/橘色 (溫暖微熱)
-     - `> 30°C`：紅色 (高溫炎熱)
-   - 支援日期的互動切換與 Marker / Circle 點擊彈出視窗 (Popup)。
-3. **雙即時資料源整合**：
-   - 📡 **台灣即時氣象地圖 ([taiwan-weather-map.vercel.app](https://taiwan-weather-map.vercel.app/))**：即時取得全台 340+ 座自動氣象站的高頻觀測數值。
-   - 🍃 **Edimax AirBox 台灣物聯網空氣盒子 ([airbox.edimaxcloud.com](https://airbox.edimaxcloud.com/))**：結合中研院資訊所 (IIS-NRL) 與訊舟科技開放端點，即時呈現全台校園 IoT 感測節點之溫度、濕度與 PM2.5 空品狀況。
-4. **SQLite 關聯式資料庫持久化**：
-   - 資料表 `TemperatureForecasts` 與 `AirBoxReadings`。
-   - 內建 SQL 查詢與驗證沙盒 (支援執行 `SELECT DISTINCT regionName` 等驗證語法)。
-   - 支援 UPSERT 重複執行不重複插入機制。
-
----
-
-## ⚖️ 資料來源合法性與安全防護聲明 (Legal & Open Data Compliance)
-
-為確保本網站完全符合台灣與國際網路法規，杜絕「未授權爬蟲」、「DDoS 伺服器超載」或「侵權」疑慮，本系統採用最高標準之合法合規防護：
-
-1. **依據合法開放資料授權條款**：
-   - **中央氣象署 (CWA) 氣象資料**：依據中華民國「**政府資料開放授權條款 (Open Government Data License, OGDL-Taiwan) 第一號**」，開放學術研究、個人及商業合法重製、改作與散布，本專案依規定完整標明出處。
-   - **Edimax AirBox / LASS 物聯網開放資料**：訊舟科技 (Edimax) 與中央研究院資訊科技創新研究中心 (IIS-NRL) 合作推動之社群開放資料，採用「**創用 CC 姓名標示-相同方式分享 (CC-BY-SA 4.0)**」授權，供物聯網教學與研究使用。
-2. **智慧防洪快取 (Rate Limiting & In-Memory Caching)**：
-   - 系統核心內建 **300 秒 (5 分鐘) 的 TTL 快取機制**。
-   - 使用者瀏覽或點擊時均由快取提供，嚴格限制對外部網站的連線頻率，絕無高頻密集輪詢 (No DDOS / No hammering)。
-3. **透明學術 User-Agent 標頭**：
-   - 發送請求時明確表明身分：`Taiwan-IoT-Academic-Course-Project/1.0 (Master Degree IoT Coursework)`，身分透明且遵循網路禮節。
-4. **無機敏個資與會員資料**：
-   - 僅讀取公開大氣物理數值 (氣溫、濕度、PM2.5、風速)，絕不涉及任何個人隱私或會員帳號資料。
-
----
-
-## 🗺️ 專案架構與微課程 24 步驟對應
-
-| 步驟編號 | 學習主題 | 本專案實作模組與功能 |
-| :---: | :--- | :--- |
-| **01~02** | 課程介紹與台灣天氣生活 | 儀表板設計理念、物聯網生活應用與學習地圖導覽頁 |
-| **03~04** | CWA Open Data 與 API 取得 | `cwa_service.py` 封裝 Requests 取得 JSON 預報資料 |
-| **05~06** | JSON 結構解析與 MinT/MaxT 提取 | 解析 locations、weatherElement 提取氣溫數值 |
-| **07** | 資料整理與預覽 | 使用 Pandas 結構化清洗為乾淨的 DataFrame 表格 |
-| **08~09** | SQLite 資料庫與 Schema 設計 | `database.py` 建立 `data.db` 與 `TemperatureForecasts` 資料表 |
-| **10** | 查詢資料驗證 | 內建 SQL 查詢沙盒，支援驗證 DISTINCT 與 WHERE 語法 |
-| **11~12** | Streamlit 入門與 SQL 讀取 | `app.py` 串接 `pd.read_sql_query` 即時讀取資料庫 |
-| **13** | 下拉選單選擇地區 | `st.selectbox` 互動篩選全台各大區域 |
-| **14** | 繪製折線圖 | Plotly 互動式折線圖 (MaxT 紅線、MinT 藍線、溫差填色) |
-| **15** | 顯示資料表格 | 結構化 Dataframe 即時呈現一週數值，支援下載 CSV |
-| **16** | 整合 Web App 介面 | 響應式雙欄儀表板佈局、KPI 卡片整合 |
-| **17** | 進階：台灣地圖視覺化 | Folium 台灣地圖，四段平均溫度色彩階層標記 |
-| **18** | 選擇日期顯示地圖 | 日期選擇器、地圖 Marker 點擊跳出氣候詳細資訊 Popup |
-| **19** | 完整成果展示 | Taiwan Weather Dashboard 綜合成果展示 |
-| **20** | 程式碼品質與優化 | 模組化分工、UPSERT 防重複插入、例外處理機制 |
-| **21** | 專案上傳至 GitHub | Git 版本控制、規範 .gitignore 與 README |
-| **22~24** | 延伸應用與未來探索 | 整合 Edimax AirBox 台灣校園物聯網環境感測數據 |
-
----
-
-## 📂 檔案目錄結構
+本專案依據 **HW10 Taiwan Weather Forecast** 規格完整開發，串接交通部中央氣象署 (CWA) 開放資料 API，經由 Python 進行階層式 JSON 分析清洗，持久化儲存至 SQLite 資料庫，並使用 Streamlit 建立具備互動式折線圖、7 天預報表格與 Folium 台灣地圖四段溫度色彩階層之氣象儀表板。
 
 ```text
-應用物聯網作業/
-├── app.py              # Streamlit 主程式 (儀表板、地圖視覺化、UI 控制)
-├── database.py         # SQLite 資料庫操作模組 (Schema, 連線, UPSERT, 查詢)
-├── cwa_service.py      # 中央氣象署 (CWA) API 擷取、JSON 解析與示範資料生成
-├── iot_service.py      # 台灣氣象地圖與 Edimax AirBox 開放資料同步模組 (含合規快取)
-├── data.db             # SQLite 資料庫本體 (自動初始化)
-├── requirements.txt    # Python 相依套件清單
-├── run_app.bat         # Windows 一鍵啟動批次檔
-├── .gitignore          # Git 忽略檔案設定
-└── README.md           # 完整專案說明文件
+[ 📡 CWA Open Data (F-A0010-001) ] ➔ [ 📄 JSON (7-day forecast) ] ➔ [ 🐍 Python (analysis & parsing) ] ➔ [ 🗄️ SQLite (data.db) ] ➔ [ 🎈 Streamlit (web app) ] ➔ [ 🌤️ Taiwan Weather Dashboard ]
+```
+
+### 🏆 核心學習指標 (Learning Outcomes)
+* ✅ 學會使用 Open Data API
+* ✅ 掌握 JSON 資料結構分析
+* ✅ 建立 SQLite 資料庫
+* ✅ 使用 Streamlit 製作互動式 Web App
+* ✅ 培養資料處理與視覺化能力
+
+---
+
+## 🗺️ 五大核心模組規格 (Modules)
+
+### 1️⃣ 模組 1：取得 CWA API 資料 (20%)
+* **目標**：使用 CWA API 取得台灣六大區域一週天氣預報 (必須使用 JSON 格式)。
+* **六大區域**：
+  * **北部地區**、**中部地區**、**南部地區**、**東北部地區**、**東部地區**、**東南部地區**
+* **主要步驟**：
+  1. 使用 `requests` 呼叫 CWA API (`F-A0010-001` 或 `F-D0047-091`)
+  2. 使用 `json.dumps` 觀察回傳的 JSON 資料結構
+  3. 確認資料取得成功並儲存為原始檔
+* **評分項目**：取得資料 10% ｜ 觀察JSON 5% ｜ 程式品質 5%
+
+### 2️⃣ 模組 2：分析 JSON，提取氣溫資料 (20%)
+* **目標**：分析 JSON 結構，找出並提取每日最高與最低氣溫 (Region 在資料中通常以 Location 表示)。
+* **分析重點 (JSON 巢狀結構)**：
+  ```text
+  JSON
+  └── records
+      └── locations
+          └── location[] (地區)
+              └── weatherElement[] (天氣要素)
+                  └── time[] (預報日期)
+                      ├── elementName: MinT (最低溫)
+                      └── elementName: MaxT (最高溫)
+  ```
+* **提取結果範例**：
+  | regionName | dataDate | mint | maxt |
+  | :--- | :---: | :---: | :---: |
+  | 北部地區 | 2026-04-14 | 18.0 | 26.0 |
+  | 中部地區 | 2026-04-14 | 20.0 | 30.0 |
+  | 南部地區 | 2026-04-14 | 22.0 | 31.0 |
+* **評分項目**：提取正確 10% ｜ 觀察資料 5% ｜ 程式品質 5%
+
+### 3️⃣ 模組 3：存入 SQLite 資料庫 (20%)
+* **目標**：將氣溫資料儲存到 SQLite 資料庫 (`data.db`)。
+* **資料庫設計**：
+  ```sql
+  CREATE TABLE TemperatureForecasts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      regionName TEXT NOT NULL,
+      dataDate TEXT NOT NULL,
+      mint REAL NOT NULL,
+      maxt REAL NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(regionName, dataDate)
+  );
+  ```
+* **驗證查詢**：
+  1. 列出所有地區名稱：
+     ```sql
+     SELECT DISTINCT regionName FROM TemperatureForecasts;
+     ```
+  2. 查詢中部地區資料：
+     ```sql
+     SELECT * FROM TemperatureForecasts WHERE regionName = '中部地區';
+     ```
+* **評分項目**：儲存資料 10% ｜ 查詢驗證 5% ｜ 程式品質 5%
+
+### 4️⃣ 模組 4：Streamlit 氣溫預報 Web App (40%)
+* **目標**：建立互動式 Web App，從 SQLite 查詢資料，提供下拉選單，顯示一週氣溫的折線圖與表格。
+* **功能需求**：
+  1. 下拉選單選擇地區 (`st.selectbox`)
+  2. 使用 SQL 從 SQLite (`data.db`) 查詢資料 (`pd.read_sql_query`)
+  3. 顯示最高溫 (`MaxT` 紅線) 與最低溫 (`MinT` 藍線) 折線圖
+  4. 顯示一週 (7 天) 資料表格與 CSV 下載
+* **評分項目**：下拉選單 10% ｜ 折線圖與表格 15% ｜ SQLite 查詢 10% ｜ 程式品質 5%
+
+### 5️⃣ 模組 5：進階：台灣地圖視覺化 (Optional 加分)
+* **目標**：製作互動式台灣地圖，顯示各區當日平均溫度 (使用 Folium + Streamlit)。
+* **依平均溫度設定顏色**：
+  * 🔵 **< 20°C**：藍色 (涼爽)
+  * 🟢 **20 - 25°C**：綠色 (舒適)
+  * 🟡 **25 - 30°C**：黃色 (溫暖)
+  * 🔴 **> 30°C**：紅色 (炎熱)
+* **地圖標示與 Popup**：標示六大分區，點擊跳出詳細氣象數值卡片。
+
+---
+
+## 📂 專案檔案結構 (Project Structure)
+
+完全依循 HW10 官方標準目錄設計：
+
+```text
+HW10_weather/
+├── fetch_weather.py   # [模組 1] 呼叫 CWA API 取得原始預報 JSON
+├── parse_weather.py   # [模組 2] 分析 JSON 階層結構，提取 MinT 與 MaxT
+├── database.py        # [模組 3] 建立 SQLite 資料庫與執行驗證查詢
+├── app.py             # [模組 4 & 5] Streamlit 互動預報與 Folium 地圖主程式
+├── data.db            # SQLite 資料庫 (儲存 TemperatureForecasts 資料表)
+├── weather_data.csv   # [中間產物] 清洗後之一週六大分區氣溫數值
+├── cwa_service.py     # CWA API 輔助服務與基準數據生成
+├── iot_service.py     # 測站觀測與物聯網輔助服務
+├── requirements.txt   # 相依套件清單
+├── run_app.bat        # Windows 一鍵啟動指令檔
+└── README.md          # 專案說明文件
 ```
 
 ---
 
-## 🚀 快速開始 (Quick Start)
+## 🚀 執行方式 (Getting Started)
 
-### 1. 安裝相依套件
+### 步驟 1：建立虛擬環境 (建議)
+```bash
+python -m venv venv
+# Windows 啟動虛擬環境:
+venv\Scripts\activate
+# Mac / Linux 啟動虛擬環境:
+source venv/bin/activate
+```
 
-請確保已安裝 Python 3.10 以上版本，並於終端機執行：
-
+### 步驟 2：安裝相依套件
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 啟動 Web 應用程式
+### 步驟 3：執行資料處理 (一次即可)
+依序執行資料擷取、解析與資料庫寫入：
+```bash
+# 1. 取得 CWA API 原始資料
+python fetch_weather.py
 
-#### 方式一：使用 Windows 一鍵啟動 (推薦)
-直接雙擊執行目錄下的 `run_app.bat` 檔案。
+# 2. 解析 JSON 並產出 weather_data.csv
+python parse_weather.py
 
-#### 方式二：使用指令啟動
+# 3. 存入 SQLite (data.db) 並執行 SQL 查詢驗證
+python database.py
+```
+
+### 步驟 4：啟動 Web App
 ```bash
 streamlit run app.py
 ```
-
-啟動後，瀏覽器將自動開啟：`http://localhost:8501`。
-
----
-
-## 💻 系統截圖與操作說明
-
-1. **🌤️ 天氣預報儀表板**：
-   - 頂部 KPI 卡片顯示全島平均溫、最高溫與最低溫。
-   - 左側可切換地區查看氣溫走勢折線圖與預報表格。
-   - 右側可切換「微課程五大分區」、「台灣氣象地圖 340+ 測站」或「Edimax AirBox 校園物聯網節點」地圖圖層。
-2. **🌐 氣象與物聯網資料同步**：
-   - 支援一鍵連線更新外部開放資料至 SQLite 本地資料庫。
-   - 亦可輸入使用者自訂之 API 網址進行擴充。
-3. **🔍 SQL 查詢與資料驗證**：
-   - 內建教學用 SQL 查詢範本，可即時執行並驗證資料庫資料。
-4. **⚖️ 開放資料授權與合法性說明**：
-   - 完整標明資料授權來源與系統安全機制。
+> 或在 Windows 環境下直接雙擊執行 `run_app.bat`。
 
 ---
 
-## 📜 授權與版權聲明 (Credits)
+## ⚠️ 重要注意事項 (Important Notes)
 
-- **主辦課程**：AI 創新微課程 Taiwan Weather Forecast
-- **資料來源**：
-  - 中華民國交通部中央氣象署 (Central Weather Administration, CWA)
-  - 台灣即時氣象地圖 (Taiwan Weather Map)
-  - 訊舟科技 (Edimax) AirBox × 中央研究院資訊科學研究所 (IIS-NRL) LASS 開放資料社群
-- **著作權與使用條款**：
-  - 本專案程式碼基於 MIT License 開源。
-  - 氣象資料依「政府資料開放授權條款 (OGDL) 第一號」使用。
-  - 感測器資料依「創用 CC 姓名標示-相同方式分享 (CC-BY-SA 4.0)」使用。
-#   H W 1  
- #   H W 1  
- #   H W 1  
- 
+1. **使用自己的 CWA API Key**：執行實際線上抓取時，請於環境變數 `CWA_API_KEY` 或於介面中輸入個人金鑰，不能使用老師提供的金鑰繳交。
+2. **Streamlit 必須從 SQLite 查詢資料**：Web App 嚴格遵循架構，前端圖表與表格由 `data.db` 讀取，不可直接在 Streamlit 前端呼叫外部 API。
+3. **確保六個地區的資料都正確**：包含北部、中部、南部、東北部、東部、東南部。
+4. **表格與圖表需顯示一週 (7天) 資料**。
+5. **進階的台灣地圖為加分功能**：已完整實作於儀表板右側，支援即時切換預報日期與彈出氣溫資訊。
+
+---
+
+💡 *用程式連結真實世界，讓資料說出天氣的故事！*

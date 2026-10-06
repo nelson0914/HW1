@@ -13,6 +13,13 @@ import sqlite3
 import pandas as pd
 from typing import List, Dict, Any, Optional
 import os
+import sys
+
+# 確保 Windows 命令提示字元編碼相容性 (防止 cp950 編碼問題)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db")
 
@@ -69,16 +76,28 @@ def init_db(db_path: str = DB_FILE) -> None:
 
 def insert_forecasts(records: List[Dict[str, Any]], db_path: str = DB_FILE) -> int:
     """
-    步驟 20：重複執行不重複插入 (UPSERT)
+    HW10 模組 3 & 重複執行不重複插入 (UPSERT)
     使用 SQLite 的 ON CONFLICT(regionName, dataDate) DO UPDATE
-    確保重複執行更新時直接更新 minT 與 maxT，不產生重複記錄。
+    確保重複執行更新時直接更新 mint 與 maxt，不產生重複記錄。
     """
     if not records:
         return 0
 
+    # 統一鍵名相容 mint/minT 與 maxt/maxT
+    normalized = []
+    for r in records:
+        mint_val = r.get("mint", r.get("minT", 20.0))
+        maxt_val = r.get("maxt", r.get("maxT", 28.0))
+        normalized.append({
+            "regionName": str(r.get("regionName")),
+            "dataDate": str(r.get("dataDate")),
+            "mint": float(mint_val),
+            "maxt": float(maxt_val)
+        })
+
     upsert_sql = """
     INSERT INTO TemperatureForecasts (regionName, dataDate, minT, maxT, updated_at)
-    VALUES (:regionName, :dataDate, :minT, :maxT, CURRENT_TIMESTAMP)
+    VALUES (:regionName, :dataDate, :mint, :maxt, CURRENT_TIMESTAMP)
     ON CONFLICT(regionName, dataDate) DO UPDATE SET
         minT = excluded.minT,
         maxT = excluded.maxT,
@@ -86,7 +105,7 @@ def insert_forecasts(records: List[Dict[str, Any]], db_path: str = DB_FILE) -> i
     """
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
-        cursor.executemany(upsert_sql, records)
+        cursor.executemany(upsert_sql, normalized)
         conn.commit()
         return cursor.rowcount
 
@@ -218,3 +237,50 @@ def get_summary_statistics(db_path: str = DB_FILE) -> Dict[str, Any]:
             "highest_temp": 0.0,
             "overall_avg_temp": 0.0,
         }
+
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("🗄️ HW10 步驟 3：存入 SQLite 資料庫 (data.db) 與執行驗證查詢")
+    print("=" * 60)
+
+    # 1. 初始化資料庫與資料表
+    init_db()
+    print("✅ 資料表 TemperatureForecasts 初始化完成！")
+
+    # 2. 載入 weather_data.csv 或示範資料
+    csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weather_data.csv")
+    records_to_insert = []
+    if os.path.exists(csv_path):
+        import pandas as pd
+        csv_df = pd.read_csv(csv_path)
+        records_to_insert = csv_df.to_dict(orient="records")
+        print(f"📄 讀取中間產物 {csv_path} (共 {len(records_to_insert)} 筆資料)")
+    else:
+        import cwa_service
+        records_to_insert = cwa_service.generate_sample_forecast_data("2026-04-14")
+        print("📄 載入 HW10 標準示範資料集 (2026-04-14 起六大分區一週數據)")
+
+    inserted_count = insert_forecasts(records_to_insert)
+    print(f"💾 成功將 {len(records_to_insert)} 筆氣溫紀錄存入 data.db (UPSERT 完成)！\n")
+
+    # 3. 驗證查詢 ①：列出所有地區名稱
+    print("🔍 驗證查詢 1：列出所有地區名稱")
+    print("   SQL: SELECT DISTINCT regionName FROM TemperatureForecasts;")
+    print("-" * 50)
+    distinct_regs = get_distinct_regions()
+    for reg in distinct_regs:
+        print(f"   • {reg}")
+    print("-" * 50)
+
+    # 4. 驗證查詢 ②：查詢中部地區資料
+    print("\n🔍 驗證查詢 2：查詢中部地區資料")
+    print("   SQL: SELECT * FROM TemperatureForecasts WHERE regionName = '中部地區';")
+    print("-" * 50)
+    taichung_df = get_forecasts_by_region("中部地區")
+    print(taichung_df[["dataDate", "minT", "maxT", "avgT"]].to_string(index=False))
+    print("-" * 50)
+
+    print("\n🎉 步驟 3 完成！資料庫已準備就緒。")
+    print("👉 請繼續執行第四步啟動 Web App：streamlit run app.py\n")
+

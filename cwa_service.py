@@ -16,53 +16,68 @@ import pandas as pd
 from typing import List, Dict, Any, Tuple, Optional
 import database
 
-# 預設中央氣象署開放資料 API 端點 (全台未來一週天氣預報 / 一般天氣預報)
-DEFAULT_CWA_API_URL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091"
+# 預設中央氣象署開放資料 API 端點 (全台未來一週天氣預報 F-A0010-001 / F-D0047-091)
+DEFAULT_CWA_API_URL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-A0010-001"
 
-# 台灣主要分區地理座標與預設縣市參照
+# 台灣六大分區地理座標與預設縣市參照 (符合 HW10 規範)
 REGION_METADATA = {
-    "北部地區": {"lat": 25.0375, "lon": 121.5637, "desc": "包含基隆、臺北、新北、桃園、新竹"},
-    "中部地區": {"lat": 24.1477, "lon": 120.6736, "desc": "包含苗栗、臺中、彰化、南投、雲林"},
-    "南部地區": {"lat": 22.6273, "lon": 120.3014, "desc": "包含嘉義、臺南、高雄、屏東"},
+    "北部地區": {"lat": 25.0375, "lon": 121.5637, "desc": "包含基隆市、臺北市、新北市、桃園市、新竹市、新竹縣、苗栗縣"},
+    "中部地區": {"lat": 24.1477, "lon": 120.6736, "desc": "包含臺中市、彰化縣、南投縣、雲林縣、嘉義市、嘉義縣"},
+    "南部地區": {"lat": 22.6273, "lon": 120.3014, "desc": "包含臺南市、高雄市、屏東縣"},
     "東北部地區": {"lat": 24.7570, "lon": 121.7530, "desc": "包含宜蘭縣與東北角地區"},
-    "東南部地區": {"lat": 23.9872, "lon": 121.6016, "desc": "包含花蓮、臺東地區"},
+    "東部地區": {"lat": 23.9872, "lon": 121.6016, "desc": "包含花蓮縣地區"},
+    "東南部地區": {"lat": 22.7583, "lon": 121.1444, "desc": "包含臺東縣地區"},
 }
 
-def generate_sample_forecast_data(start_date_str: Optional[str] = None) -> List[Dict[str, Any]]:
+def generate_sample_forecast_data(start_date_str: Optional[str] = "2026-04-14") -> List[Dict[str, Any]]:
     """
-    生成標準範例預報資料 (模擬微課程投影片中的數據情境)
-    涵蓋北部、中部、南部、東北部、東南部等主要地區的一週氣溫預報。
+    生成標準範例預報資料 (精確符合 HW10 課程海報數據)
+    涵蓋北部、中部、南部、東北部、東部、東南部六大地區之一週氣溫預報。
+    基準起始日期預設為海報所示之 2026-04-14。
     """
     if not start_date_str:
-        # 使用投影片中的 2026-04-14 或當前日期
-        base_date = datetime.now().date()
-    else:
-        try:
-            base_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            base_date = datetime.now().date()
+        start_date_str = "2026-04-14"
 
-    # 基準溫度模型 (不同地區的溫度特性)
-    region_base_temps = {
-        "北部地區": {"min": 19.0, "max": 27.5},
-        "中部地區": {"min": 21.0, "max": 31.0},
-        "南部地區": {"min": 23.0, "max": 32.5},
-        "東北部地區": {"min": 18.5, "max": 26.0},
-        "東南部地區": {"min": 22.0, "max": 29.5},
+    try:
+        base_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        base_date = datetime(2026, 4, 14).date()
+
+    # 精準匹配海報中的數值 (中部地區 7 天完全對應 Card 4，其他地區對應 Card 2 & 5)
+    exact_series = {
+        "中部地區": [
+            (20.0, 30.0), (21.0, 31.0), (22.0, 32.0), (21.0, 30.0),
+            (20.0, 29.0), (20.0, 30.0), (22.0, 31.0)
+        ],
+        "北部地區": [
+            (18.0, 26.0), (19.0, 27.0), (20.0, 28.0), (19.0, 27.0),
+            (18.0, 25.0), (18.0, 26.0), (19.0, 27.0)
+        ],
+        "南部地區": [
+            (22.0, 31.0), (23.0, 32.0), (24.0, 33.0), (23.0, 32.0),
+            (22.0, 31.0), (23.0, 32.0), (24.0, 33.0)
+        ],
+        "東北部地區": [
+            (19.0, 25.0), (19.0, 26.0), (20.0, 26.0), (20.0, 25.0),
+            (19.0, 24.0), (19.0, 25.0), (20.0, 26.0)
+        ],
+        "東部地區": [
+            (20.0, 27.0), (21.0, 28.0), (21.0, 29.0), (21.0, 28.0),
+            (20.0, 27.0), (21.0, 28.0), (21.0, 29.0)
+        ],
+        "東南部地區": [
+            (21.0, 29.0), (22.0, 30.0), (22.0, 30.0), (22.0, 29.0),
+            (21.0, 28.0), (22.0, 29.0), (22.0, 30.0)
+        ],
     }
 
     records = []
-    # 產生未來 7 天資料
     for day_offset in range(7):
         target_date = base_date + timedelta(days=day_offset)
         target_date_str = target_date.strftime("%Y-%m-%d")
 
-        # 每天微幅波動模擬自然氣溫變化
-        wave = (day_offset % 3 - 1) * 0.8
-
-        for region, base in region_base_temps.items():
-            min_t = round(base["min"] + wave + (0.3 if region == "中部地區" else 0.0), 1)
-            max_t = round(base["max"] + wave * 1.2 + (0.5 if region == "南部地區" else 0.0), 1)
+        for region, temps in exact_series.items():
+            min_t, max_t = temps[day_offset % len(temps)]
             records.append({
                 "regionName": region,
                 "dataDate": target_date_str,
@@ -106,13 +121,14 @@ def parse_cwa_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         locations_list = records_obj["location"]
 
     if locations_list:
-        # 地區對應關係 (將縣市歸納至五大地區，或直接使用縣市名)
+        # 地區對應關係 (將縣市歸納至六大地區，或直接使用縣市名)
         county_to_region = {
-            "臺北市": "北部地區", "新北市": "北部地區", "基隆市": "北部地區", "桃園市": "北部地區", "新竹市": "北部地區", "新竹縣": "北部地區",
-            "苗栗縣": "中部地區", "臺中市": "中部地區", "彰化縣": "中部地區", "南投縣": "中部地區", "雲林縣": "中部地區",
-            "嘉義市": "南部地區", "嘉義縣": "南部地區", "臺南市": "南部地區", "高雄市": "南部地區", "屏東縣": "南部地區",
+            "臺北市": "北部地區", "新北市": "北部地區", "基隆市": "北部地區", "桃園市": "北部地區", "新竹市": "北部地區", "新竹縣": "北部地區", "苗栗縣": "北部地區",
+            "臺中市": "中部地區", "彰化縣": "中部地區", "南投縣": "中部地區", "雲林縣": "中部地區", "嘉義市": "中部地區", "嘉義縣": "中部地區",
+            "臺南市": "南部地區", "高雄市": "南部地區", "屏東縣": "南部地區",
             "宜蘭縣": "東北部地區",
-            "花蓮縣": "東南部地區", "臺東縣": "東南部地區",
+            "花蓮縣": "東部地區",
+            "臺東縣": "東南部地區",
             "澎湖縣": "南部地區", "金門縣": "中部地區", "連江縣": "北部地區"
         }
 
