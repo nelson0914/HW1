@@ -99,12 +99,14 @@ def fetch_taiwan_weather_map_data(force_refresh: bool = False) -> Tuple[bool, st
                 "regionName": region_name
             })
 
-        # 將 360+ 測站數據聚合為 5 大分區的 MinT / MaxT
+        # 將 360+ 測站數據聚合為各分區之 MinT / MaxT (排除高山測站如合歡山/玉山之極端低溫)
         region_forecasts = []
         for r_name, t_list in region_temps.items():
             if t_list:
-                min_t = round(min(t_list), 1)
-                max_t = round(max(t_list), 1)
+                # 平地主流溫度 (排除低於 16°C 之高山測站干擾)
+                plain_temps = [t for t in t_list if t >= 16.0] or t_list
+                min_t = round(min(plain_temps), 1)
+                max_t = round(max(plain_temps), 1)
                 region_forecasts.append({
                     "regionName": r_name,
                     "dataDate": today_str,
@@ -237,52 +239,14 @@ def sync_all_realtime_weather(force_refresh: bool = False) -> Dict[str, Any]:
     if air_ok and air_records:
         database.insert_airbox_readings(air_records)
 
-    # 2. 生成以「今天真實日期」為起點的六大分區 7 天預報資料
-    # 先整理今天六大分區的真實觀測 Min / Max
-    reg_today_stats = {}
-    if reg_forecasts:
-        for rf in reg_forecasts:
-            reg_today_stats[rf["regionName"]] = (rf["minT"], rf["maxT"])
-
-    regions = ["北部地區", "中部地區", "南部地區", "東北部地區", "東部地區", "東南部地區"]
-    # 預設基礎氣溫基準 (若當日測站不足時平滑補充)
-    base_defaults = {
-        "北部地區": (19.0, 26.5),
-        "中部地區": (21.0, 30.5),
-        "南部地區": (23.0, 32.0),
-        "東北部地區": (20.0, 26.0),
-        "東部地區": (21.0, 28.0),
-        "東南部地區": (22.0, 29.5),
-    }
-
-    full_7day_records = []
-    # 週期微幅自然變化 offset
-    offsets = [
-        (0.0, 0.0), (0.5, 1.0), (1.0, 1.5), (0.0, 0.5),
-        (-0.5, -0.5), (0.0, 0.5), (1.0, 1.0)
-    ]
-
-    for reg in regions:
-        # 當日基準溫
-        curr_min, curr_max = reg_today_stats.get(reg, base_defaults.get(reg, (20.0, 28.0)))
-        # 確保 min < max
-        if curr_min >= curr_max:
-            curr_max = curr_min + 6.0
-
-        for day_i in range(7):
-            day_date = (now_dt + timedelta(days=day_i)).strftime("%Y-%m-%d")
-            d_min_off, d_max_off = offsets[day_i % len(offsets)]
-            day_min = round(curr_min + d_min_off, 1)
-            day_max = round(curr_max + d_max_off, 1)
-            if day_min >= day_max:
-                day_max = round(day_min + 5.0, 1)
-
-            full_7day_records.append({
-                "regionName": reg,
-                "dataDate": day_date,
-                "minT": day_min,
-                "maxT": day_max
-            })
+    # 2. 優先呼叫中央氣象署官方 7 天預報 API (F-D0047-091)
+    import cwa_service
+    cwa_ok_api, cwa_msg_api, cwa_7day_records = cwa_service.fetch_weather_from_url()
+    if cwa_ok_api and cwa_7day_records:
+        full_7day_records = cwa_7day_records
+    else:
+        # 降級保護：若網路或端點異常，載入與今日對齊之標準基準數據
+        full_7day_records = cwa_service.generate_sample_forecast_data(today_str)
 
     # 3. 清理過期預報並寫入 SQLite TemperatureForecasts
     try:

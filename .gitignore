@@ -4,3 +4,7 @@ __pycache__/
 *.log
 .vscode/
 .idea/
+.env
+*.env
+.streamlit/secrets.toml
+scratch/

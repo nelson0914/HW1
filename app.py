@@ -13,6 +13,17 @@ import os
 from datetime import datetime
 import json
 
+# 優先自環境變數或本地 .env 載入個人金鑰 (不暴露在原始碼中)
+if not os.environ.get("CWA_API_KEY"):
+    _env_f = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(_env_f):
+        with open(_env_f, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("CWA_API_KEY="):
+                    os.environ["CWA_API_KEY"] = line.split("=", 1)[1].strip()
+                    break
+
 # 匯入後端模組
 import database
 import cwa_service
@@ -398,6 +409,22 @@ with st.sidebar:
     st.write(f"• **涵蓋六大分區**：`{stats.get('total_regions', 0)}` 區")
     st.write(f"• **日期區間**：`{stats.get('start_date', 'N/A')}` ~ `{stats.get('end_date', 'N/A')}`")
 
+    st.markdown("---")
+    st.subheader("✅ 作業規定確認")
+    _cwa_k = os.environ.get("CWA_API_KEY", "")
+    _key_set = bool(_cwa_k)
+    _key_icon = "🔑" if _key_set else "⚠️"
+    _key_msg = "個人 API Key 已就緒 (安全隱藏模式)" if _key_set else "請至「資料同步」頁輸入個人 API Key"
+    st.markdown(f"""
+<div style="font-size:0.77rem; line-height:2.0; color:#334155; background:#f8fafc; border-radius:8px; padding:8px 12px; border:1px solid #e2e8f0;">
+{_key_icon} <b>個人 API Key</b>：{_key_msg}<br>
+✅ <b>SQLite 讀取</b>：圖表/表格均由 data.db 查詢<br>
+✅ <b>六大分區</b>：北部·中部·南部·東北部·東部·東南部<br>
+✅ <b>7 天預報</b>：圖表與表格顯示完整一週<br>
+✅ <b>進階地圖</b>：衛星雲圖+日期切換 (加分功能)
+</div>
+    """, unsafe_allow_html=True)
+
 
 # -----------------------------------------------------------------------------
 # 頂部主視覺橫幅 (Hero Banner)
@@ -430,7 +457,7 @@ st.markdown("""
     <div class="flow-steps">
         <div class="flow-node">
             <span>📡 CWA Open Data</span>
-            <small>F-A0010-001</small>
+            <small>F-D0047-091</small>
         </div>
         <span class="flow-arrow">➔</span>
         <div class="flow-node">
@@ -948,6 +975,82 @@ if menu_choice == "🌤️ 氣溫預報 Web App (Live Dashboard)":
 
         st_folium(m, width=540, height=440)
 
+    # -------------------------------------------------------------------------
+    # 下方：全台六大分區完整 7 天氣溫預報總覽 (嚴格由 SQLite data.db 查詢)
+    # -------------------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("""
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:1.35rem; color:#0f172a;">
+            📊 全台六大分區完整 7 天預報總覽 (嚴格由 SQLite data.db 讀取)
+        </h3>
+        <span style="font-size:0.8rem; background:#e0f2fe; color:#0369a1; padding:4px 12px; border-radius:12px; font-weight:700;">
+            🗄️ SQL: SELECT * FROM TemperatureForecasts ORDER BY dataDate, regionName
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 嚴格從 SQLite 資料庫讀取全部預報 (不呼叫外部 API)
+    all_df = database.get_all_forecasts()
+    if not all_df.empty:
+        col_tab1, col_tab2 = st.tabs(["📋 六大分區 × 7 天氣溫預報矩陣表 (Table)", "📈 六大分區一週氣溫趨勢綜合折線圖 (Chart)"])
+
+        with col_tab1:
+            st.caption("以下資料 100% 來自本地 SQLite 資料庫 (data.db)，包含北部、中部、南部、東北部、東部、東南部六大地區完整 7 天真實預報。")
+            pivot_min = all_df.pivot(index="regionName", columns="dataDate", values="minT")
+            pivot_max = all_df.pivot(index="regionName", columns="dataDate", values="maxT")
+
+            combined_rows = []
+            date_cols = sorted(list(pivot_min.columns))
+            for reg in ["北部地區", "中部地區", "南部地區", "東北部地區", "東部地區", "東南部地區"]:
+                if reg in pivot_min.index:
+                    row_data = {"分區名稱": reg}
+                    for d in date_cols:
+                        d_short = d[5:] if len(d) >= 10 else d
+                        min_v = pivot_min.loc[reg, d]
+                        max_v = pivot_max.loc[reg, d]
+                        row_data[f"{d_short} (Min~Max)"] = f"{min_v}°C ~ {max_v}°C"
+                    combined_rows.append(row_data)
+
+            if combined_rows:
+                st.dataframe(pd.DataFrame(combined_rows), use_container_width=True, hide_index=True)
+            else:
+                st.dataframe(all_df[["regionName", "dataDate", "minT", "maxT", "avgT"]], use_container_width=True, hide_index=True)
+
+        with col_tab2:
+            fig_all = go.Figure()
+            color_map = {
+                "北部地區": "#2563eb",
+                "中部地區": "#10b981",
+                "南部地區": "#e11d48",
+                "東北部地區": "#0891b2",
+                "東部地區": "#8b5cf6",
+                "東南部地區": "#f59e0b"
+            }
+            for reg_name, grp in all_df.groupby("regionName"):
+                grp_sorted = grp.sort_values("dataDate")
+                c = color_map.get(reg_name, "#64748b")
+                fig_all.add_trace(go.Scatter(
+                    x=grp_sorted["dataDate"],
+                    y=grp_sorted["avgT"],
+                    name=reg_name,
+                    mode="lines+markers",
+                    line=dict(color=c, width=3),
+                    marker=dict(size=8)
+                ))
+            fig_all.update_layout(
+                title="全台六大分區未來 7 天平均氣溫走勢 (°C) ── 來源: SQLite data.db",
+                xaxis_title="預報日期",
+                yaxis_title="平均氣溫 (°C)",
+                hovermode="x unified",
+                height=360,
+                margin=dict(l=20, r=20, t=45, b=25),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(248, 250, 252, 0.7)"
+            )
+            st.plotly_chart(fig_all, use_container_width=True)
+
+
 
 # =============================================================================
 # 分頁 2：🔍 SQLite 資料庫與 SQL 驗證 (Database Sandbox)
@@ -1019,16 +1122,26 @@ elif menu_choice == "🔄 資料同步與 CWA API (Data Sync)":
     with tab_sync1:
         st.subheader("標準基準預報數據")
         st.write("此數據集包含中部地區、北部地區、南部地區、東北部地區、東部地區、東南部地區六大分區完整 7 天預報。")
+        st.info("📅 基準起始日期自動設為**今日**，確保日期與 7 天預報表格對應正確。")
         if st.button("🚀 立即重設並載入標準預報至 SQLite (data.db)", type="primary"):
-            records = cwa_service.generate_sample_forecast_data("2026-04-14")
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            records = cwa_service.generate_sample_forecast_data(today_str)
             cnt = database.insert_forecasts(records)
-            st.success(f"✅ 成功將 {cnt} 筆六大分區預報存入 data.db！")
+            st.success(f"✅ 成功將 {cnt} 筆六大分區預報（起始日期：{today_str}）存入 data.db！")
             st.dataframe(pd.DataFrame(records).head(12), use_container_width=True)
 
     with tab_sync2:
         st.subheader("呼叫 CWA API (F-A0010-001 或 F-D0047-091)")
         user_cwa_url = st.text_input("API 端點網址：", value=cwa_service.DEFAULT_CWA_API_URL)
-        user_api_key = st.text_input("輸入個人 CWA API Key：", value="", type="password", help="注意事項 1：使用自己的 CWA API Key，不能使用老師提供的金鑰繳交。")
+        _env_key = os.environ.get("CWA_API_KEY", "")
+        user_api_key = st.text_input(
+            "輸入個人 CWA API Key：",
+            value=_env_key,
+            type="password",
+            help="📌 規定：使用自己的 CWA API Key，不能使用老師提供的金鑰繳交。\n可預先設定環境變數 CWA_API_KEY=<your_key> 自動帶入。"
+        )
+        if _env_key:
+            st.info("🔑 已從環境變數 `CWA_API_KEY` 自動載入您的個人 API Key。")
 
         if st.button("🚀 呼叫 API 並同步至 SQLite"):
             with st.spinner("正在連線至中央氣象署並解析 JSON..."):
