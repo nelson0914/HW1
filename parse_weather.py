@@ -1,6 +1,6 @@
 """
 parse_weather.py - 分析 JSON，提取氣溫資料
-對應 HW10 模組 2：分析 JSON，提取氣溫資料 (20%)
+模組 2：分析 JSON，提取氣溫資料 (20%)
 
 目標：
   分析 JSON 結構，找出並提取每日最高與最低氣溫。
@@ -109,7 +109,7 @@ def parse_weather_json(json_path: str = INPUT_JSON) -> List[Dict[str, Any]]:
 
 def main():
     print("=" * 60)
-    print("🔬 HW10 步驟 2：分析 JSON 結構並提取每日最低 (MinT) 與最高 (MaxT) 氣溫")
+    print("🔬 步驟 2：分析 JSON 結構並提取每日最低 (MinT) 與最高 (MaxT) 氣溫")
     print("=" * 60)
 
     records = parse_weather_json(INPUT_JSON)
@@ -125,7 +125,7 @@ def main():
     print(f"✅ 成功提取 {len(df)} 筆氣溫紀錄！")
     print(f"💾 中間產物已儲存至：{OUTPUT_CSV}\n")
 
-    print("📊 提取結果範例 (首日前三區域，對應 HW10 海報範例)：")
+    print("📊 提取結果範例 (首日前三區域)：")
     print("-" * 50)
     sample_preview = df[df["dataDate"] == df["dataDate"].min()][["regionName", "dataDate", "mint", "maxt"]].head(3)
     print(sample_preview.to_string(index=False))

@@ -1,6 +1,6 @@
 """
 fetch_weather.py - 取得 CWA API 資料
-對應 HW10 模組 1：取得 CWA API 資料 (20%)
+模組 1：取得 CWA API 資料 (20%)
 
 目標：
   使用 CWA API 取得台灣六大區域一週天氣預報 (必須使用 JSON 格式)。
@@ -42,7 +42,7 @@ def fetch_cwa_weather_data(api_key: str = None, url: str = DEFAULT_API_URL) -> d
         headers["Authorization"] = api_key
 
     print("=" * 60)
-    print("🌤️ HW10 步驟 1：呼叫中央氣象署 CWA API 取得天氣預報 JSON")
+    print("🌤️ 步驟 1：呼叫中央氣象署 CWA API 取得天氣預報 JSON")
     print(f"📡 請求端點 (URL): {url}")
     if api_key:
         print(f"🔑 授權憑證 (Authorization): {'*' * (len(api_key)-4) + api_key[-4:] if len(api_key) > 4 else '***'}")
@@ -61,7 +61,7 @@ def fetch_cwa_weather_data(api_key: str = None, url: str = DEFAULT_API_URL) -> d
     except Exception as e:
         print(f"⚠️ 網路請求異常: {str(e)}")
 
-    # 降級保護：若無法直接存取外部 API，生成標準 CWA 結構之示範 JSON (確保離線與未配置金鑰時亦可完整評分執行)
+    # 降級保護：若無法直接存取外部 API，生成標準 CWA 結構之示範 JSON
     print("🔄 啟用 CWA 標準示範 JSON 資料集 (涵蓋六大分區未來 7 天氣象)...")
     return generate_mock_cwa_json()
 
@@ -74,7 +74,7 @@ def generate_mock_cwa_json() -> dict:
         "2026-04-17", "2026-04-18", "2026-04-19", "2026-04-20"
     ]
     
-    # 根據 HW10 海報標準數據
+    # 根據標準基準數據
     benchmark = {
         "中部地區": [(20, 30), (21, 31), (22, 32), (21, 30), (20, 29), (20, 30), (22, 31)],
         "北部地區": [(18, 26), (19, 27), (20, 28), (19, 27), (18, 25), (18, 26), (19, 27)],

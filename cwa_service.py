@@ -19,7 +19,7 @@ import database
 # 預設中央氣象署開放資料 API 端點 (全台未來一週天氣預報 F-A0010-001 / F-D0047-091)
 DEFAULT_CWA_API_URL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-A0010-001"
 
-# 台灣六大分區地理座標與預設縣市參照 (符合 HW10 規範)
+# 台灣六大分區地理座標與預設縣市參照
 REGION_METADATA = {
     "北部地區": {"lat": 25.0375, "lon": 121.5637, "desc": "包含基隆市、臺北市、新北市、桃園市、新竹市、新竹縣、苗栗縣"},
     "中部地區": {"lat": 24.1477, "lon": 120.6736, "desc": "包含臺中市、彰化縣、南投縣、雲林縣、嘉義市、嘉義縣"},
@@ -31,7 +31,7 @@ REGION_METADATA = {
 
 def generate_sample_forecast_data(start_date_str: Optional[str] = "2026-04-14") -> List[Dict[str, Any]]:
     """
-    生成標準範例預報資料 (精確符合 HW10 課程海報數據)
+    生成標準範例預報資料
     涵蓋北部、中部、南部、東北部、東部、東南部六大地區之一週氣溫預報。
     基準起始日期預設為海報所示之 2026-04-14。
     """

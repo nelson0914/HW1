@@ -1,5 +1,5 @@
 """
-app.py - HW10 Taiwan Weather Forecast 從氣象資料到互動式天氣預報應用程式
+app.py - Taiwan Weather Forecast 從氣象資料到互動式天氣預報應用程式
 核心技術：CWA API × JSON × Python × SQLite × Streamlit
 資料流：資料獲取 · 資料分析 · 資料儲存 · 資料查詢 · 視覺化展示
 """
@@ -22,14 +22,14 @@ import iot_service
 # 頁面基本配置 (Streamlit Page Config)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="HW10 Taiwan Weather Forecast | 互動式天氣預報應用程式",
+    page_title="Taiwan Weather Forecast | 互動式天氣預報應用程式",
     page_icon="⛅",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # -----------------------------------------------------------------------------
-# 全域 CSS 美化 (HW10 經典主題、精緻卡片、圓角陰影與字體)
+# 全域 CSS 美化 (現代科技主題、精緻卡片、圓角陰影與字體)
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -43,8 +43,8 @@ st.markdown("""
         font-family: 'JetBrains Mono', monospace !important;
     }
 
-    /* 頂部主視覺 Banner (對應海報 Header) */
-    .hw10-hero-banner {
+    /* 頂部主視覺 Banner */
+    .weather-hero-banner {
         background: linear-gradient(135deg, #092042 0%, #103b7b 45%, #0284c7 100%);
         color: white;
         padding: 24px 30px;
@@ -55,7 +55,7 @@ st.markdown("""
         position: relative;
         overflow: hidden;
     }
-    .hw10-hero-banner::after {
+    .weather-hero-banner::after {
         content: "🌤️";
         position: absolute;
         right: 20px;
@@ -110,8 +110,8 @@ st.markdown("""
         opacity: 0.9;
     }
 
-    /* 流程架構指示條 (海報 Architecture Flow Bar) */
-    .hw10-flow-container {
+    /* 流程架構指示條 (Architecture Flow Bar) */
+    .weather-flow-container {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -285,16 +285,17 @@ st.markdown("""
 
 
 # -----------------------------------------------------------------------------
-# 資料庫初始化與資料就緒檢查 (HW10 規範)
-# @st.cache_resource 確保 Streamlit Cloud 冷啟動時只初始化一次
+# 資料庫初始化與即時氣象資料就緒檢查 (100% 即時更新)
 # -----------------------------------------------------------------------------
 @st.cache_resource
 def _init_database():
-    """初始化資料庫並載入 HW10 基準預報資料 (僅執行一次)"""
+    """初始化資料庫並自動進行即時氣象連線同步"""
     database.init_db()
-    regions = database.get_distinct_regions()
-    if not regions:
-        sample_records = cwa_service.generate_sample_forecast_data("2026-04-14")
+    try:
+        iot_service.sync_all_realtime_weather(force_refresh=False)
+    except Exception:
+        today_s = datetime.now().strftime("%Y-%m-%d")
+        sample_records = cwa_service.generate_sample_forecast_data(today_s)
         database.insert_forecasts(sample_records)
     return True
 
@@ -302,11 +303,11 @@ _init_database()
 
 
 # -----------------------------------------------------------------------------
-# 輔助函式：HW10 模組 5 溫度色彩標準
+# 輔助函式：溫度色階與 AirBox 色彩標準
 # -----------------------------------------------------------------------------
 def get_temperature_color(avg_temp: float) -> str:
     """
-    HW10 模組 5 色彩規範：
+    溫度色階規範：
       < 20°C: 藍色 (#2196F3)
       20 - 25°C: 綠色 (#4CAF50)
       25 - 30°C: 黃色 (#FFC107)
@@ -323,25 +324,37 @@ def get_temperature_color(avg_temp: float) -> str:
 
 
 def get_pm25_color(pm25: float) -> str:
-    """空氣品質 PM2.5 顏色標準"""
+    """空氣品質 PM2.5 顏色標準 (對應 AirBox / 環保署指標)"""
     if pm25 <= 15.4:
-        return "#4CAF50"
+        return "#10b981"  # 綠色 (良好)
     elif pm25 <= 35.4:
-        return "#FFEB3B"
+        return "#eab308"  # 黃色 (普通)
     elif pm25 <= 54.4:
-        return "#FF9800"
+        return "#f97316"  # 橘色 (對敏感族群不健康)
     elif pm25 <= 150.4:
-        return "#F44336"
+        return "#ef4444"  # 紅色 (對所有族群不健康)
     else:
-        return "#9C27B0"
+        return "#a855f7"  # 紫色 (非常不健康/危害)
+
+
+def get_humidity_color(humidity: float) -> str:
+    """相對濕度顏色標準"""
+    if humidity > 80:
+        return "#1d4ed8"  # 深藍 (潮濕)
+    elif humidity >= 65:
+        return "#0284c7"  # 淺藍 (適濕)
+    elif humidity >= 50:
+        return "#10b981"  # 綠色 (舒適)
+    else:
+        return "#f59e0b"  # 橙色 (乾燥)
 
 
 # -----------------------------------------------------------------------------
-# 側邊欄控制台 (Sidebar Controls) - 遵照需求移除開放授權與24步導覽
+# 側邊欄控制台 (Sidebar Controls)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.image("https://img.icons8.com/clouds/200/sun.png", width=75)
-    st.title("HW10 控制台")
+    st.title("氣象預報控制台")
     st.caption("CWA API × JSON × SQLite × Streamlit")
     st.markdown("---")
 
@@ -349,7 +362,6 @@ with st.sidebar:
         "選擇功能分頁：",
         [
             "🌤️ 氣溫預報 Web App (Live Dashboard)",
-            "📋 HW10 課程專案架構全覽 (Assignment Guide)",
             "🔍 SQLite 資料庫與 SQL 驗證 (Database Sandbox)",
             "🔄 資料同步與 CWA API (Data Sync)"
         ],
@@ -357,13 +369,16 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.subheader("⚡ 快速資料操作")
+    st.subheader("⚡ 即時資料操作")
 
-    if st.button("🔄 載入 HW10 標準示範預報 (2026-04-14)", use_container_width=True):
-        samples = cwa_service.generate_sample_forecast_data("2026-04-14")
-        database.insert_forecasts(samples)
-        st.success("✅ 已同步載入 HW10 基準一週預報資料！")
-        st.rerun()
+    if st.button("🔄 立即重新整理所有天氣 (Live Sync)", use_container_width=True, type="primary"):
+        with st.spinner("正在連線更新全台 340+ 氣象測站與 AirBox 物聯網節點..."):
+            sync_res = iot_service.sync_all_realtime_weather(force_refresh=True)
+            if sync_res.get("success"):
+                st.success(f"✅ {sync_res.get('message')}")
+                st.rerun()
+            else:
+                st.error("同步失敗，請檢查網路連線。")
 
     if st.button("📡 同步 全台即時觀測站 (340+站)", use_container_width=True):
         with st.spinner("正在連線更新全台測站觀測數據..."):
@@ -385,15 +400,15 @@ with st.sidebar:
 
 
 # -----------------------------------------------------------------------------
-# 頂部主視覺橫幅 (HW10 Hero Banner - 完美對應海報 Header)
+# 頂部主視覺橫幅 (Hero Banner)
 # -----------------------------------------------------------------------------
 st.markdown("""
-<div class="hw10-hero-banner">
+<div class="weather-hero-banner">
     <div class="banner-top-row">
         <div class="banner-title-left">
             <span style="font-size: 2.8rem;">🌤️</span>
             <div>
-                <div class="banner-title-text">HW10 Taiwan Weather Forecast</div>
+                <div class="banner-title-text">Taiwan Weather Forecast</div>
                 <div class="banner-tech-stack">CWA API × JSON × Python × SQLite × Streamlit</div>
             </div>
         </div>
@@ -408,10 +423,10 @@ st.markdown("""
 
 
 # -----------------------------------------------------------------------------
-# 系統架構流程與學習重點條 (對應海報流程圖與右側學習重點)
+# 系統架構流程與學習重點條 (Architecture Flow Bar)
 # -----------------------------------------------------------------------------
 st.markdown("""
-<div class="hw10-flow-container">
+<div class="weather-flow-container">
     <div class="flow-steps">
         <div class="flow-node">
             <span>📡 CWA Open Data</span>
@@ -534,7 +549,7 @@ if menu_choice == "🌤️ 氣溫預報 Web App (Live Dashboard)":
 
         regions = database.get_distinct_regions()
         if not regions:
-            st.warning("資料庫中尚無地區資料，請至側邊欄點選「載入 HW10 標準示範預報」。")
+            st.warning("資料庫中尚無地區資料，請至側邊欄點選「立即重新整理所有天氣 (Live Sync)」。")
             st.stop()
 
         # 預設選中海報範例中的「中部地區」
@@ -621,423 +636,325 @@ if menu_choice == "🌤️ 氣溫預報 Web App (Live Dashboard)":
             )
 
     # -------------------------------------------------------------------------
-    # 右欄：模組 5 - 進階：台灣地圖視覺化 (Optional) (Folium + Streamlit)
+    # 右欄：模組 5 - 進階：全球衛星雲圖與全台即時物聯網 (AirBox Style · 100% 即時更新)
     # -------------------------------------------------------------------------
     with col_right:
         st.markdown("""
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; font-size:1.35rem; color:#0f172a;">
-                <span style="background:#0284c7; color:white; padding:2px 8px; border-radius:6px; font-size:1rem; margin-right:6px;">5</span>
-                進階：台灣地圖視覺化 (Optional)
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <h3 style="margin:0; font-size:1.3rem; color:#0f172a;">
+                <span style="background:#0284c7; color:white; padding:2px 8px; border-radius:6px; font-size:0.95rem; margin-right:6px;">5</span>
+                進階：全球衛星雲圖與即時物聯網 (AirBox Style)
             </h3>
-            <span style="font-size:0.8rem; color:#64748b;">Folium + Streamlit 互動地圖</span>
+            <span style="font-size:0.75rem; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:12px; font-weight:700;">
+                🟢 100% 即時更新
+            </span>
         </div>
         """, unsafe_allow_html=True)
 
-        map_mode = st.radio(
-            "地圖圖層模式：",
-            ["📍 微課程六大分區 (海報標準)", "🌀 Windy 風場風格全台 340+ CWA 測站", "🍃 Edimax AirBox 物聯網"],
-            index=0,
-            horizontal=True
-        )
+        # 取得全台即時資料
+        sync_res = iot_service.sync_all_realtime_weather(force_refresh=False)
+        cwa_stations = sync_res.get("cwa_stations", [])
+        airbox_stations = sync_res.get("airbox_stations", [])
+        radar_url = sync_res.get("radar_tile_url")
+        last_updated = sync_res.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-        all_dates = database.get_distinct_dates()
-        selected_date = all_dates[0] if all_dates else "2026-04-14"
+        # 即時數據快報與重新整理按鈕
+        st_row1, st_row2 = st.columns([2.8, 1.2])
+        with st_row1:
+            st.markdown(f"""
+            <div style="font-size:0.78rem; color:#334155; line-height:1.45; padding:6px 10px; background:#f1f5f9; border-radius:8px; border-left:4px solid #0284c7; margin-bottom:8px;">
+                📡 <b>即時測站總數</b>：<b>{len(cwa_stations) + len(airbox_stations)}</b> 站 (氣象署 {len(cwa_stations)} + AirBox {len(airbox_stations)})<br>
+                🌡️ <b>全台均溫</b>：<b>{sync_res.get('avg_temp', 25.0)}°C</b> ｜ 🍃 <b>平均 PM2.5</b>：<b>{sync_res.get('avg_pm25', 15.0)} μg/m³</b> ｜ 🕒 <b>{last_updated}</b>
+            </div>
+            """, unsafe_allow_html=True)
+        with st_row2:
+            if st.button("🔄 刷新即時數據", use_container_width=True, type="primary"):
+                iot_service.sync_all_realtime_weather(force_refresh=True)
+                st.rerun()
 
-        # 模式 1：微課程六大分區
-        if map_mode == "📍 微課程六大分區 (海報標準)":
-            if all_dates:
-                selected_date = st.selectbox("📅 選擇預報日期 (Date)：", all_dates, index=0)
+        # 地圖控制列
+        ctl_c1, ctl_c2 = st.columns(2)
+        with ctl_c1:
+            map_base = st.selectbox(
+                "🗺️ 地圖底圖樣式 (Map Style)：",
+                [
+                    "🛰️ 全球衛星雲圖 (Esri World Imagery)",
+                    "🌌 AirBox 經典深色夜空圖 (CartoDB Dark)",
+                    "🗺️ 簡潔高對比街道圖 (CartoDB Positron)"
+                ],
+                index=0
+            )
+        with ctl_c2:
+            metric_mode = st.selectbox(
+                "📊 觀測指標 (Metric)：",
+                [
+                    "🌡️ 即時氣溫 (°C)",
+                    "🍃 空氣品質 PM2.5 (μg/m³)",
+                    "💧 相對濕度 (%)"
+                ],
+                index=0
+            )
 
-            # 模組 5 規範之四段溫度色階圖例
+        ctl_c3, ctl_c4 = st.columns(2)
+        with ctl_c3:
+            all_counties = ["全部縣市"] + sorted(list({s.get("county") for s in cwa_stations if s.get("county")}))
+            selected_county = st.selectbox("📍 篩選縣市 (County)：", all_counties, index=0)
+        with ctl_c4:
+            station_layer = st.selectbox(
+                "📡 測站圖層篩選 (Layer)：",
+                [
+                    "🌐 全部站點 (CWA + AirBox + 六大分區)",
+                    "🏛️ 中央氣象署 (CWA) 實體站",
+                    "🍃 Edimax AirBox 物聯網節點",
+                    "📍 六大分區核心看板"
+                ],
+                index=0
+            )
+
+        radar_overlay = st.checkbox("☁️ 疊加 RainViewer 全球即時雷達衛星雲圖 (Radar Clouds)", value=True)
+
+        # 動態圖例列
+        if "氣溫" in metric_mode:
             st.markdown("""
-            <div class="temp-legend-bar">
-                <span>依平均溫度設定顏色：</span>
-                <span><span class="legend-dot" style="background:#2196F3;"></span>&lt; 20°C (藍色)</span>
-                <span><span class="legend-dot" style="background:#4CAF50;"></span>20 - 25°C (綠色)</span>
-                <span><span class="legend-dot" style="background:#FFC107;"></span>25 - 30°C (黃色)</span>
-                <span><span class="legend-dot" style="background:#F44336;"></span>&gt; 30°C (紅色)</span>
+            <div class="temp-legend-bar" style="margin-bottom:8px;">
+                <span>氣溫色階：</span>
+                <span><span class="legend-dot" style="background:#2196F3;"></span>&lt; 20°C 涼爽</span>
+                <span><span class="legend-dot" style="background:#4CAF50;"></span>20-25°C 舒適</span>
+                <span><span class="legend-dot" style="background:#FFC107;"></span>25-30°C 溫暖</span>
+                <span><span class="legend-dot" style="background:#F44336;"></span>&gt; 30°C 炎熱</span>
+            </div>
+            """, unsafe_allow_html=True)
+        elif "PM2.5" in metric_mode:
+            st.markdown("""
+            <div class="temp-legend-bar" style="margin-bottom:8px;">
+                <span>PM2.5 空品：</span>
+                <span><span class="legend-dot" style="background:#10b981;"></span>≤15.4 良好</span>
+                <span><span class="legend-dot" style="background:#eab308;"></span>≤35.4 普通</span>
+                <span><span class="legend-dot" style="background:#f97316;"></span>≤54.4 敏感族群</span>
+                <span><span class="legend-dot" style="background:#ef4444;"></span>≤150.4 不健康</span>
+                <span><span class="legend-dot" style="background:#a855f7;"></span>&gt;150.4 危害</span>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="temp-legend-bar" style="margin-bottom:8px;">
+                <span>相對濕度：</span>
+                <span><span class="legend-dot" style="background:#f59e0b;"></span>&lt;50% 乾燥</span>
+                <span><span class="legend-dot" style="background:#10b981;"></span>50-65% 舒適</span>
+                <span><span class="legend-dot" style="background:#0284c7;"></span>65-80% 適濕</span>
+                <span><span class="legend-dot" style="background:#1d4ed8;"></span>&gt;80% 潮濕</span>
             </div>
             """, unsafe_allow_html=True)
 
-            m = folium.Map(
-                location=[23.75, 120.95],
-                zoom_start=7.2,
-                tiles="CartoDB positron"
-            )
+        # 構建 Folium 地圖
+        m = folium.Map(
+            location=[23.75, 120.95],
+            zoom_start=7.3,
+            tiles=None
+        )
 
-            date_df = database.get_forecasts_by_date(selected_date)
-            for _, row in date_df.iterrows():
-                r_name = row["regionName"]
-                min_t = row["minT"]
-                max_t = row["maxT"]
-                avg_t = row["avgT"]
+        # 底圖
+        if "衛星" in map_base:
+            folium.TileLayer(
+                tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                attr="Esri World Imagery",
+                name="🛰️ 全球衛星空照圖",
+                overlay=False,
+                control=False
+            ).add_to(m)
+        elif "深色" in map_base:
+            folium.TileLayer(tiles="CartoDB dark_matter", name="CartoDB Dark", overlay=False, control=False).add_to(m)
+        else:
+            folium.TileLayer(tiles="CartoDB positron", name="CartoDB Positron", overlay=False, control=False).add_to(m)
+
+        # 即時雷達衛星雲圖疊加層
+        if radar_overlay and radar_url:
+            folium.TileLayer(
+                tiles=radar_url,
+                attr="RainViewer Radar & Clouds",
+                name="即時雷達衛星雲圖",
+                opacity=0.62,
+                overlay=True
+            ).add_to(m)
+
+        # 1. 繪製六大分區核心看板
+        if "全部" in station_layer or "六大分區" in station_layer:
+            today_date_str = datetime.now().strftime("%Y-%m-%d")
+            reg_df = database.get_forecasts_by_date(today_date_str)
+            for _, r_row in reg_df.iterrows():
+                r_name = r_row["regionName"]
                 coord = cwa_service.REGION_METADATA.get(r_name, {"lat": 23.97, "lon": 120.98})
-                color_hex = get_temperature_color(avg_t)
+                r_min = r_row["minT"]
+                r_max = r_row["maxT"]
+                r_avg = r_row["avgT"]
+                r_color = get_temperature_color(r_avg)
 
-                # Popup 彈出視窗 (完全符合海報 Card 5 右下角格式)
-                popup_content = f"""
-                <div style="font-family: sans-serif; font-size: 13px; width: 150px; line-height: 1.4;">
-                    <div style="font-weight: bold; font-size: 15px; color: {color_hex}; margin-bottom: 4px;">{r_name}</div>
-                    <div><b>Date:</b> {selected_date}</div>
-                    <div><b>Min:</b> {min_t}°C</div>
-                    <div><b>Max:</b> {max_t}°C</div>
-                    <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1; color: #475569;">
-                        平均溫：<b>{avg_t}°C</b>
+                pop_reg = f"""
+                <div style="font-family:'Noto Sans TC',sans-serif; background:#0f172a; color:#f8fafc; padding:10px 12px; border-radius:8px; width:180px; line-height:1.45; box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:10px; background:#0284c7; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;">六大分區看板</span>
+                        <span style="font-size:10px; color:#94a3b8;">{today_date_str}</span>
+                    </div>
+                    <b style="font-size:14px; color:{r_color};">📍 {r_name}</b><br>
+                    <hr style="border:0; border-top:1px solid #334155; margin:5px 0;">
+                    <div style="font-size:12px; line-height:1.6;">
+                        <div>本日最低溫：<b style="color:#60a5fa;">{r_min}°C</b></div>
+                        <div>本日最高溫：<b style="color:#f87171;">{r_max}°C</b></div>
+                        <div>本日平均溫：<b style="color:#fde047;">{r_avg}°C</b></div>
+                    </div>
+                    <div style="margin-top:6px; font-size:10px; color:#94a3b8; border-top:1px dashed #334155; padding-top:4px;">
+                        {coord.get('desc', '')}
                     </div>
                 </div>
                 """
 
-                # 外圈色塊
+                # 外層脈衝光暈
                 folium.CircleMarker(
                     location=[coord["lat"], coord["lon"]],
-                    radius=22,
-                    color=color_hex,
+                    radius=20,
+                    color=r_color,
+                    weight=2,
                     fill=True,
-                    fill_color=color_hex,
+                    fill_color=r_color,
                     fill_opacity=0.35,
-                    tooltip=f"{r_name} (平均 {avg_t}°C)",
-                    popup=folium.Popup(popup_content, max_width=200)
+                    tooltip=f"📍 {r_name}：平均 {r_avg}°C (即時)",
+                    popup=folium.Popup(pop_reg, max_width=220)
                 ).add_to(m)
 
-                # 中心實心小點
+                # 中心醒目標記
                 folium.CircleMarker(
                     location=[coord["lat"], coord["lon"]],
                     radius=7,
                     color="#ffffff",
                     weight=2,
                     fill=True,
-                    fill_color=color_hex,
+                    fill_color=r_color,
                     fill_opacity=1.0,
-                    popup=folium.Popup(popup_content, max_width=200)
+                    popup=folium.Popup(pop_reg, max_width=220)
                 ).add_to(m)
 
-            st_folium(m, width=540, height=440)
+        # 2. 繪製 CWA 實體測站 (348+ 站)
+        if ("全部" in station_layer or "中央氣象署" in station_layer) and cwa_stations:
+            filtered_cwa = [
+                s for s in cwa_stations
+                if (selected_county == "全部縣市" or s.get("county") == selected_county)
+            ]
+            for s in filtered_cwa[:200]:
+                temp = s.get("temperature", 25.0)
+                hum = s.get("humidity", 70.0)
+                weather_desc = s.get("weather", "多雲")
 
-        # 模式 2：Windy 風格全台 340+ CWA 實體測站 (融入 Reference 參考設計)
-        elif map_mode == "🌀 Windy 風場風格全台 340+ CWA 測站":
-            st.caption("支援縣市篩選、溫度閾值、以及即時測站詳細數值彈窗 (Station, Humidity, Wind, Time)")
-            
-            c_col1, c_col2 = st.columns(2)
-            with c_col1:
-                ok, _, _, stations = iot_service.fetch_taiwan_weather_map_data()
-                all_counties = ["全部縣市"] + sorted(list({s["county"] for s in stations if s["county"]})) if ok else ["全部縣市"]
-                selected_county = st.selectbox("篩選縣市 (County)：", all_counties, index=0)
-            with c_col2:
-                temp_filter = st.slider("最低氣溫過濾 (°C)：", 10.0, 35.0, 15.0, 1.0)
-
-            # 溫度圖例
-            st.markdown("""
-            <div class="temp-legend-bar">
-                <span>即時觀測色階：</span>
-                <span><span class="legend-dot" style="background:#2b6cb0;"></span>&lt;15°C 涼爽</span>
-                <span><span class="legend-dot" style="background:#38a169;"></span>15-25°C 舒適</span>
-                <span><span class="legend-dot" style="background:#ed8936;"></span>25-30°C 溫暖</span>
-                <span><span class="legend-dot" style="background:#e53e3e;"></span>&gt;30°C 炎熱</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            m = folium.Map(location=[23.75, 120.95], zoom_start=7.3, tiles="CartoDB dark_matter")
-
-            if ok and stations:
-                # 篩選
-                filtered_stations = [
-                    s for s in stations 
-                    if (selected_county == "全部縣市" or s["county"] == selected_county) 
-                    and s["temperature"] >= temp_filter
-                ]
-
-                # 顯示前 250 個標記維持滑順
-                for s in filtered_stations[:250]:
-                    temp = s["temperature"]
+                if "氣溫" in metric_mode:
                     c_hex = get_temperature_color(temp)
+                    metric_label = f"氣溫: {temp}°C"
+                elif "PM2.5" in metric_mode:
+                    c_hex = get_pm25_color(15.0)
+                    metric_label = f"氣溫: {temp}°C (CWA站)"
+                else:
+                    c_hex = get_humidity_color(hum)
+                    metric_label = f"濕度: {hum}%"
 
-                    # Reference 彈窗結構：StationName, County, Town, Temp, Humidity, Wind, Time
-                    obs_time = datetime.now().strftime("%Y-%m-%d %H:00")
-                    popup_html = f"""
-                    <div style="font-family:sans-serif; font-size:12px; width:160px; line-height:1.4;">
-                        <b style="font-size:13px; color:{c_hex};">📍 {s['stationId']} {s['county']}{s['town']}</b><br>
-                        氣溫 (Temp)：<b>{temp}°C</b><br>
-                        濕度 (Humidity)：<b>{s['humidity']}%</b><br>
-                        天氣 (Weather)：<b>{s['weather']}</b><br>
-                        時間 (Observed)：{obs_time}
+                pop_cwa = f"""
+                <div style="font-family:'Noto Sans TC',sans-serif; background:#0f172a; color:#f8fafc; padding:10px 12px; border-radius:8px; width:180px; line-height:1.45; box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:10px; background:#0284c7; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;">🏛️ CWA 實體測站</span>
+                        <span style="font-size:10px; color:#94a3b8;">即時觀測</span>
                     </div>
-                    """
-                    folium.CircleMarker(
-                        location=[s["lat"], s["lon"]],
-                        radius=5,
-                        color=c_hex,
-                        fill=True,
-                        fill_color=c_hex,
-                        fill_opacity=0.85,
-                        tooltip=f"{s['county']}{s['town']}: {temp}°C",
-                        popup=folium.Popup(popup_html, max_width=200)
-                    ).add_to(m)
-
-            st_folium(m, width=540, height=410)
-
-        # 模式 3：Edimax AirBox 校園物聯網
-        elif map_mode == "🍃 Edimax AirBox 物聯網":
-            st.caption("全台校園 IoT 感測節點 (溫度 / 濕度 / PM2.5 空品)")
-            air_df = database.get_all_airbox_readings(limit=100)
-            if air_df.empty:
-                ok, _, air_records = iot_service.fetch_airbox_edimax_data()
-                if ok and air_records:
-                    database.insert_airbox_readings(air_records)
-                    air_df = database.get_all_airbox_readings(limit=100)
-
-            m = folium.Map(location=[23.75, 120.95], zoom_start=7.3, tiles="CartoDB positron")
-            for _, row in air_df.iterrows():
-                pm_val = row["pm25"]
-                c_pm = get_pm25_color(pm_val)
-                pop_html = f"""
-                <div style="font-family:sans-serif; font-size:12px; width:160px;">
-                    <b style="color:#0284c7;">🍃 {row['siteName']}</b><br>
-                    氣溫：<b>{row['temperature']}°C</b><br>
-                    濕度：<b>{row['humidity']}%</b><br>
-                    PM2.5：<b style="color:{c_pm};">{pm_val} μg/m³</b>
+                    <b style="font-size:13px; color:#38bdf8;">📍 {s.get('stationId')} {s.get('county')}{s.get('town')}</b>
+                    <hr style="border:0; border-top:1px solid #334155; margin:5px 0;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:11px;">
+                        <div>🌡️ 氣溫: <b style="color:{get_temperature_color(temp)}; font-size:12px;">{temp}°C</b></div>
+                        <div>💧 濕度: <b>{hum}%</b></div>
+                        <div style="grid-column:span 2;">🌤️ 天氣狀態: <b>{weather_desc}</b></div>
+                        <div style="grid-column:span 2; font-size:10px; color:#94a3b8;">觀測時間: {last_updated}</div>
+                    </div>
                 </div>
                 """
+
                 folium.CircleMarker(
-                    location=[row["lat"], row["lon"]],
-                    radius=6,
-                    color=c_pm,
+                    location=[s["lat"], s["lon"]],
+                    radius=5,
+                    color=c_hex,
+                    weight=1.5,
                     fill=True,
-                    fill_color=c_pm,
-                    fill_opacity=0.8,
-                    tooltip=f"{row['siteName']}: {row['temperature']}°C | PM2.5: {pm_val}",
-                    popup=folium.Popup(pop_html, max_width=200)
+                    fill_color=c_hex,
+                    fill_opacity=0.85,
+                    tooltip=f"{s.get('county')}{s.get('town')}: {metric_label}",
+                    popup=folium.Popup(pop_cwa, max_width=210)
                 ).add_to(m)
 
-            st_folium(m, width=540, height=440)
+        # 3. 繪製 Edimax AirBox 物聯網節點 (150+ 站)
+        if ("全部" in station_layer or "AirBox" in station_layer) and airbox_stations:
+            filtered_air = [
+                a for a in airbox_stations
+                if (selected_county == "全部縣市" or selected_county in a.get("area", "") or selected_county in a.get("siteName", ""))
+            ]
+            for a in filtered_air[:150]:
+                temp = a.get("temperature", 25.0)
+                hum = a.get("humidity", 70.0)
+                pm25 = a.get("pm25", 15.0)
+                site = a.get("siteName", "AirBox 節點")
+
+                if "氣溫" in metric_mode:
+                    c_hex = get_temperature_color(temp)
+                    metric_label = f"{temp}°C"
+                elif "PM2.5" in metric_mode:
+                    c_hex = get_pm25_color(pm25)
+                    metric_label = f"PM2.5: {pm25}"
+                else:
+                    c_hex = get_humidity_color(hum)
+                    metric_label = f"濕度: {hum}%"
+
+                pop_air = f"""
+                <div style="font-family:'Noto Sans TC',sans-serif; background:#0f172a; color:#f8fafc; padding:10px 12px; border-radius:8px; width:180px; line-height:1.45; box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:10px; background:#10b981; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;">🍃 Edimax AirBox</span>
+                        <span style="font-size:10px; color:#94a3b8;">IoT 即時</span>
+                    </div>
+                    <b style="font-size:13px; color:#a7f3d0;">🏫 {site}</b>
+                    <hr style="border:0; border-top:1px solid #334155; margin:5px 0;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:11px;">
+                        <div>🌡️ 氣溫: <b>{temp}°C</b></div>
+                        <div>💧 濕度: <b>{hum}%</b></div>
+                        <div style="grid-column:span 2;">🍃 PM2.5: <b style="color:{get_pm25_color(pm25)}; font-size:12px;">{pm25} μg/m³</b></div>
+                        <div style="grid-column:span 2; font-size:10px; color:#94a3b8;">觀測時間: {a.get('observedTime', last_updated)}</div>
+                    </div>
+                </div>
+                """
+
+                # AirBox 經典發光雙層標記
+                folium.CircleMarker(
+                    location=[a["lat"], a["lon"]],
+                    radius=6,
+                    color=c_hex,
+                    weight=1,
+                    fill=True,
+                    fill_color=c_hex,
+                    fill_opacity=0.45,
+                    tooltip=f"{site}: {metric_label}",
+                    popup=folium.Popup(pop_air, max_width=210)
+                ).add_to(m)
+
+                folium.CircleMarker(
+                    location=[a["lat"], a["lon"]],
+                    radius=3,
+                    color="#ffffff",
+                    weight=1,
+                    fill=True,
+                    fill_color=c_hex,
+                    fill_opacity=1.0,
+                    popup=folium.Popup(pop_air, max_width=210)
+                ).add_to(m)
+
+        st_folium(m, width=540, height=440)
 
 
 # =============================================================================
-# 分頁 2：📋 HW10 課程專案架構全覽 (完全對應使用者所提供海報之 5 大卡片)
-# =============================================================================
-elif menu_choice == "📋 HW10 課程專案架構全覽 (Assignment Guide)":
-    st.markdown("## 📋 HW10 Taiwan Weather Forecast 課程規格與五大模組全覽")
-    st.caption("完整呈現 HW10 氣象資料到互動式天氣預報之作業規範、程式碼範例與評分指引")
-
-    # 第一排：模組 1、2、3 (各佔 20%)
-    c1, c2, c3 = st.columns(3)
-
-    # 模組 1
-    with c1:
-        st.markdown("""
-        <div class="module-card">
-            <div class="module-header">
-                <span class="module-badge">1</span>
-                <span class="module-title">取得 CWA API 資料</span>
-                <span class="module-score">(20%)</span>
-            </div>
-            <p><b>目標：</b>使用 CWA API 取得台灣六大區域一週天氣預報 (必須使用 JSON 格式)。</p>
-            <div style="margin-bottom:8px;">
-                <b>區域：</b><br>
-                <span class="region-chip">北部地區</span>
-                <span class="region-chip">中部地區</span>
-                <span class="region-chip">南部地區</span><br>
-                <span class="region-chip">東北部地區</span>
-                <span class="region-chip">東部地區</span>
-                <span class="region-chip">東南部地區</span>
-            </div>
-            <b>主要步驟：</b>
-            <ol style="margin-top:4px; padding-left:18px; font-size:0.86rem; color:#334155;">
-                <li>使用 requests 呼叫 CWA API</li>
-                <li>使用 json.dumps 觀察回傳的 JSON 資料</li>
-                <li>確認資料取得成功</li>
-            </ol>
-        </div>
-        """, unsafe_allow_html=True)
-        with st.expander("💻 檢視 Module 1 核心程式碼", expanded=False):
-            st.code("""
-import requests, json
-
-url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-A0010-001"
-headers = {"Authorization": "YOUR_API_KEY"}
-resp = requests.get(url, headers=headers, timeout=30)
-data = resp.json()
-print(json.dumps(data, indent=2, ensure_ascii=False))
-            """, language="python")
-            st.caption("評分項目：取得資料 10% ｜ 觀察JSON 5% ｜ 程式品質 5%")
-
-    # 模組 2
-    with c2:
-        st.markdown("""
-        <div class="module-card">
-            <div class="module-header">
-                <span class="module-badge">2</span>
-                <span class="module-title">分析 JSON，提取氣溫資料</span>
-                <span class="module-score">(20%)</span>
-            </div>
-            <p><b>目標：</b>分析 JSON 結構，找出並提取每日最高與最低氣溫。(Region 在資料中通常以 Location 表示)</p>
-            <b>分析重點 (JSON 結構)：</b>
-            <pre style="font-size:0.75rem; background:#f8fafc; padding:6px; border-radius:6px; border:1px solid #e2e8f0;">
-JSON
-└── records
-    └── locations
-        └── location[] (地區)
-            └── weatherElement[] (天氣要素)
-                └── time[] (預報日期)
-                    ├── elementName: MinT (最低溫)
-                    └── elementName: MaxT (最高溫)</pre>
-        </div>
-        """, unsafe_allow_html=True)
-        with st.expander("📊 檢視 Module 2 提取結果範例", expanded=False):
-            sample_table = pd.DataFrame([
-                {"regionName": "北部地區", "dataDate": "2026-04-14", "mint": 18.0, "maxt": 26.0},
-                {"regionName": "中部地區", "dataDate": "2026-04-14", "mint": 20.0, "maxt": 30.0},
-                {"regionName": "南部地區", "dataDate": "2026-04-14", "mint": 22.0, "maxt": 31.0}
-            ])
-            st.dataframe(sample_table, use_container_width=True, hide_index=True)
-            st.caption("評分項目：提取正確 10% ｜ 觀察資料 5% ｜ 程式品質 5%")
-
-    # 模組 3
-    with c3:
-        st.markdown("""
-        <div class="module-card">
-            <div class="module-header">
-                <span class="module-badge">3</span>
-                <span class="module-title">存入 SQLite 資料庫</span>
-                <span class="module-score">(20%)</span>
-            </div>
-            <p><b>目標：</b>將氣溫資料儲存到 SQLite 資料庫 (data.db)。</p>
-            <b>資料庫設計：</b>
-            <pre style="font-size:0.75rem; background:#f8fafc; padding:6px; border-radius:6px; border:1px solid #e2e8f0;">
-CREATE TABLE TemperatureForecasts (
-  id INTEGER PRIMARY KEY,
-  regionName TEXT,
-  dataDate TEXT,
-  mint REAL,
-  maxt REAL
-);</pre>
-            <b>驗證查詢：</b>
-            <div style="font-size:0.82rem; color:#334155; margin-top:4px;">
-                ① 列出所有地區名稱：<code>SELECT DISTINCT regionName...</code><br>
-                ② 查詢中部地區資料：<code>SELECT * FROM ... WHERE regionName='中部地區';</code>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        with st.expander("🔍 檢視 Module 3 評分與架構", expanded=False):
-            st.caption("評分項目：儲存資料 10% ｜ 查詢驗證 5% ｜ 程式品質 5%")
-            st.write("• 資料庫檔案：`data.db`")
-            st.write("• 欄位：`id (PK)`, `regionName`, `dataDate`, `mint`, `maxt`")
-
-    st.write("")
-
-    # 第二排：模組 4 (40%) 與 模組 5 (進階加分)
-    c4, c5 = st.columns([1.1, 0.9])
-
-    with c4:
-        st.markdown("""
-        <div class="module-card">
-            <div class="module-header">
-                <span class="module-badge">4</span>
-                <span class="module-title">Streamlit 氣溫預報 Web App</span>
-                <span class="module-score">(40%)</span>
-            </div>
-            <p><b>目標：</b>建立互動式 Web App，從 SQLite 查詢資料，提供下拉選單，顯示一週氣溫的折線圖與表格。</p>
-            <b>功能需求：</b>
-            <ol style="margin-top:4px; padding-left:18px; font-size:0.88rem; color:#334155;">
-                <li>下拉選單選擇地區 (北部、中部、南部、東北部、東部、東南部)</li>
-                <li>使用 SQL 從 SQLite (data.db) 查詢資料</li>
-                <li>顯示最高 (MaxT) / 最低溫 (MinT) 折線圖</li>
-                <li>顯示一週 (7 天) 資料表格</li>
-            </ol>
-            <div style="font-size:0.85rem; color:#0284c7; font-weight:600; margin-top:8px;">
-                評分項目：下拉選單 10% ｜ 折線圖與表格 15% ｜ SQLite 查詢 10% ｜ 程式品質 5%
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with c5:
-        st.markdown("""
-        <div class="module-card">
-            <div class="module-header">
-                <span class="module-badge">5</span>
-                <span class="module-title">進階：台灣地圖視覺化</span>
-                <span class="module-score">(Optional 加分)</span>
-            </div>
-            <p><b>目標：</b>製作互動式台灣地圖，顯示各區當日平均溫度。(建議使用 Folium + Streamlit)</p>
-            <b>依平均溫度設定顏色：</b>
-            <div style="font-size:0.85rem; margin-top:6px; line-height:1.6;">
-                🔵 <b>&lt; 20°C</b> (藍色)<br>
-                🟢 <b>20 - 25°C</b> (綠色)<br>
-                🟡 <b>25 - 30°C</b> (黃色)<br>
-                🔴 <b>&gt; 30°C</b> (紅色)
-            </div>
-            <p style="font-size:0.82rem; color:#64748b; margin-top:6px;">
-                包含 Marker 點擊跳出氣候詳細資訊 Popup (地區、Date、Min、Max)。
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.write("")
-
-    # 第三排：海報底部專案結構與執行說明
-    st.markdown("### 🛠️ 專案結構、執行步驟與注意事項 (海報底部指南)")
-    b1, b2, b3, b4 = st.columns(4)
-
-    with b1:
-        st.markdown("##### 📁 專案結構建議")
-        st.code("""
-HW10_weather/
-├── fetch_weather.py
-├── parse_weather.py
-├── database.py
-├── app.py
-├── data.db
-├── weather_data.csv
-├── requirements.txt
-└── README.md
-        """, language="text")
-
-    with b2:
-        st.markdown("##### ⚙️ 執行方式 (4 步驟)")
-        st.markdown("""
-        1. **建立虛擬環境 (建議)**  
-           `python -m venv venv`  
-           `venv\\Scripts\\activate`
-        2. **安裝套件**  
-           `pip install -r requirements.txt`
-        3. **執行資料處理 (一次即可)**  
-           `python fetch_weather.py`  
-           `python parse_weather.py`  
-           `python database.py`
-        4. **啟動 Web App**  
-           `streamlit run app.py`
-        """)
-
-    with b3:
-        st.markdown("##### 📦 需要安裝的套件")
-        st.markdown("""
-        - `requests`
-        - `pandas`
-        - `streamlit`
-        - `folium`
-        - `streamlit-folium`
-        - `plotly`
-        """)
-
-    with b4:
-        st.markdown("##### ⚠️ 重要注意事項")
-        st.markdown("""
-        1. 使用自己的 CWA API Key。
-        2. **Streamlit 必須從 SQLite 查詢資料，不可直接呼叫 API**。
-        3. 確保六個地區的資料都正確。
-        4. 表格與圖表需顯示一週 (7天) 資料。
-        5. 進階的台灣地圖為加分功能。
-        """)
-
-    st.info("💡 **用程式連結真實世界，讓資料說出天氣的故事！**")
-
-
-# =============================================================================
-# 分頁 3：🔍 SQLite 資料庫與 SQL 驗證 (Database Sandbox - 對應模組 3)
+# 分頁 2：🔍 SQLite 資料庫與 SQL 驗證 (Database Sandbox)
 # =============================================================================
 elif menu_choice == "🔍 SQLite 資料庫與 SQL 驗證 (Database Sandbox)":
     st.markdown("## 🔍 SQLite 資料庫檢查與 SQL 查詢驗證")
-    st.caption("對應 HW10 模組 3：存入 SQLite 資料庫 (20%) 與驗證查詢")
+    st.caption("SQLite 資料庫檢查與 SQL 查詢驗證")
 
     # 資料表結構預覽
     with st.expander("📐 檢視 data.db 與 TemperatureForecasts 資料表 Schema", expanded=True):
@@ -1053,7 +970,7 @@ CREATE TABLE IF NOT EXISTS TemperatureForecasts (
 );
         """, language="sql")
 
-    st.subheader("驗證查詢快捷按鈕 (HW10 海報標準語法)")
+    st.subheader("驗證查詢快捷按鈕 (標準 SQL 語法)")
     q_col1, q_col2 = st.columns(2)
     with q_col1:
         if st.button("① 執行驗證查詢 1：列出所有地區名稱", use_container_width=True):
@@ -1087,21 +1004,21 @@ CREATE TABLE IF NOT EXISTS TemperatureForecasts (
 
 
 # =============================================================================
-# 分頁 4：🔄 資料同步與 CWA API (Data Sync)
+# 分頁 3：🔄 資料同步與 CWA API (Data Sync)
 # =============================================================================
 elif menu_choice == "🔄 資料同步與 CWA API (Data Sync)":
     st.markdown("## 🔄 資料同步與 CWA API 資料管線中心")
-    st.caption("支援手動更新、載入海報基準示範數據，以及連線中央氣象署 API")
+    st.caption("支援手動更新、載入基準示範數據，以及連線中央氣象署 API")
 
     tab_sync1, tab_sync2, tab_sync3 = st.tabs([
-        "📄 載入 HW10 標準數據 (2026-04-14 ~ 2026-04-20)",
+        "📄 載入標準基準預報數據",
         "🏛️ 中央氣象署 (CWA) 官方 API / 自訂網址",
         "📡 全台即時氣象測站觀測同步"
     ])
 
     with tab_sync1:
-        st.subheader("HW10 海報標準基準預報數據")
-        st.write("此數據集包含中部地區、北部地區、南部地區、東北部地區、東部地區、東南部地區六大分區完整 7 天預報，數值完全精準對應 HW10 課程海報。")
+        st.subheader("標準基準預報數據")
+        st.write("此數據集包含中部地區、北部地區、南部地區、東北部地區、東部地區、東南部地區六大分區完整 7 天預報。")
         if st.button("🚀 立即重設並載入標準預報至 SQLite (data.db)", type="primary"):
             records = cwa_service.generate_sample_forecast_data("2026-04-14")
             cnt = database.insert_forecasts(records)

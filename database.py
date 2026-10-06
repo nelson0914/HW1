@@ -76,7 +76,7 @@ def init_db(db_path: str = DB_FILE) -> None:
 
 def insert_forecasts(records: List[Dict[str, Any]], db_path: str = DB_FILE) -> int:
     """
-    HW10 模組 3 & 重複執行不重複插入 (UPSERT)
+    模組 3 & 重複執行不重複插入 (UPSERT)
     使用 SQLite 的 ON CONFLICT(regionName, dataDate) DO UPDATE
     確保重複執行更新時直接更新 mint 與 maxt，不產生重複記錄。
     """
@@ -241,7 +241,7 @@ def get_summary_statistics(db_path: str = DB_FILE) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🗄️ HW10 步驟 3：存入 SQLite 資料庫 (data.db) 與執行驗證查詢")
+    print("🗄️ 步驟 3：存入 SQLite 資料庫 (data.db) 與執行驗證查詢")
     print("=" * 60)
 
     # 1. 初始化資料庫與資料表
@@ -259,7 +259,7 @@ if __name__ == "__main__":
     else:
         import cwa_service
         records_to_insert = cwa_service.generate_sample_forecast_data("2026-04-14")
-        print("📄 載入 HW10 標準示範資料集 (2026-04-14 起六大分區一週數據)")
+        print("📄 載入標準示範資料集 (六大分區一週數據)")
 
     inserted_count = insert_forecasts(records_to_insert)
     print(f"💾 成功將 {len(records_to_insert)} 筆氣溫紀錄存入 data.db (UPSERT 完成)！\n")

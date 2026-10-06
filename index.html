@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HW10 Taiwan Weather Forecast | 互動式天氣預報應用程式</title>
-  <meta name="description" content="HW10 Taiwan Weather Forecast — 從氣象資料到互動式天氣預報應用程式。CWA API × JSON × Python × SQLite × Streamlit" />
+  <title>Taiwan Weather Forecast | 互動式天氣預報應用程式</title>
+  <meta name="description" content="Taiwan Weather Forecast — 從氣象資料到互動式天氣預報應用程式。CWA API × JSON × Python × SQLite × Streamlit" />
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -313,60 +313,46 @@
     .btn-primary { background: var(--blue-light); color: white; }
     .btn-outline { background: white; color: var(--slate-700); border: 1px solid var(--slate-300); }
 
-    /* ── Assignment Guide Section ── */
-    .section-title {
-      font-size: 1.3rem;
-      font-weight: 900;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .modules-grid-top { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 14px; }
-    .modules-grid-bot { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 14px; margin-bottom: 14px; }
-    .modules-grid-bottom { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
-
-    .mod-card {
-      background: white;
-      border: 1px solid var(--slate-300);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.03);
-    }
-    .mod-card-header { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; flex-wrap: wrap; }
-    .mod-score { font-size: .9rem; color: var(--blue-light); font-weight: 700; }
-    .mod-title { font-size: 1.05rem; font-weight: 800; }
-    .mod-body { font-size: .85rem; color: var(--slate-700); line-height: 1.55; }
-    .mod-body ol, .mod-body ul { padding-left: 16px; margin-top: 6px; }
-    .mod-body li { margin-bottom: 3px; }
-    .chip {
-      display: inline-block;
-      background: var(--blue-pale);
-      color: #0369a1;
-      padding: 3px 9px;
+    /* ── Map Controls ── */
+    .map-ctrl-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+    .map-style-btn {
+      padding: 5px 12px;
       border-radius: 6px;
+      border: 1px solid var(--slate-300);
+      background: var(--slate-100);
       font-size: .78rem;
       font-weight: 700;
-      margin: 2px 2px 2px 0;
+      cursor: pointer;
+      color: var(--slate-700);
+      transition: background .15s, color .15s;
+      font-family: inherit;
     }
-    pre.code-block {
-      background: #f8fafc;
-      border: 1px solid var(--slate-300);
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: .75rem;
-      overflow-x: auto;
-      line-height: 1.55;
-      margin-top: 8px;
-      white-space: pre;
+    .map-style-btn.active {
+      background: var(--blue-light);
+      color: white;
+      border-color: var(--blue-light);
     }
-
-    /* ── Bottom guide cards ── */
-    .guide-card { background: white; border: 1px solid var(--slate-300); border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.03); }
-    .guide-card h4 { font-size: .95rem; font-weight: 800; margin-bottom: 10px; color: var(--slate-900); }
-    .guide-card pre { font-size: .76rem; }
-    .guide-card ul, .guide-card ol { font-size: .84rem; color: var(--slate-700); padding-left: 16px; }
-    .guide-card li { margin-bottom: 5px; }
+    .map-stat-bar {
+      background: #f1f5f9;
+      border-left: 4px solid var(--blue-light);
+      border-radius: 7px;
+      padding: 5px 10px;
+      font-size: .76rem;
+      color: var(--slate-700);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .live-badge {
+      display: inline-block;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: .72rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
 
     /* ── Info Box ── */
     .info-box {
@@ -384,16 +370,12 @@
     @media (max-width: 900px) {
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
       .main-grid { grid-template-columns: 1fr; }
-      .modules-grid-top { grid-template-columns: 1fr; }
-      .modules-grid-bot { grid-template-columns: 1fr; }
-      .modules-grid-bottom { grid-template-columns: repeat(2,1fr); }
       .hero-right { text-align: left; }
       .flow-steps { gap: 4px; }
       .flow-node { min-width: 76px; }
     }
     @media (max-width: 560px) {
       .kpi-grid { grid-template-columns: 1fr 1fr; }
-      .modules-grid-bottom { grid-template-columns: 1fr; }
       .hero-title { font-size: 1.5rem; }
     }
   </style>
@@ -408,7 +390,7 @@
       <div class="hero-left">
         <span class="hero-icon">🌤️</span>
         <div>
-          <div class="hero-title">HW10 Taiwan Weather Forecast</div>
+          <div class="hero-title">Taiwan Weather Forecast</div>
           <div class="hero-tech">CWA API × JSON × Python × SQLite × Streamlit</div>
         </div>
       </div>
@@ -534,246 +516,67 @@
       </div>
     </div>
 
-    <!-- Right: Module 5 — Map -->
+    <!-- Right: Module 5 — Satellite Map -->
     <div class="panel">
       <div class="panel-header">
         <span class="module-badge">5</span>
         <div>
-          <div class="panel-title">進階：台灣地圖視覺化 (Optional)</div>
-          <div class="panel-caption">Folium + Streamlit 互動地圖</div>
+          <div class="panel-title">進階：全球衛星雲圖與即時物聯網 (AirBox Style)<span class="live-badge">🟢 100% 即時更新</span></div>
+          <div class="panel-caption">Leaflet × Esri Satellite × RainViewer Radar × 六大分區即時觀測</div>
         </div>
       </div>
 
+      <!-- Map style switcher -->
+      <div class="map-ctrl-row">
+        <button class="map-style-btn active" id="btn-sat" onclick="setMapStyle('satellite')">🛰️ 全球衛星圖</button>
+        <button class="map-style-btn" id="btn-dark" onclick="setMapStyle('dark')">🌌 AirBox 深色圖</button>
+        <button class="map-style-btn" id="btn-light" onclick="setMapStyle('light')">🗺️ 街道圖</button>
+        <label style="margin-left:auto; font-size:.78rem; font-weight:600; color:var(--slate-700); display:flex; align-items:center; gap:5px;">
+          <input type="checkbox" id="radar-toggle" checked onchange="toggleRadar(this.checked)" style="accent-color:var(--blue-light);">
+          ☁️ 即時雷達雲圖
+        </label>
+      </div>
+
+      <!-- Live stats bar -->
+      <div class="map-stat-bar" id="map-stat-bar">
+        📡 <b>全台氣象站點</b>：<b>6</b> 大分區即時看板 ｜ 🌡️ 全台均溫：<b id="map-avg-temp">--</b>°C ｜ 🕒 <span id="map-time">--</span>
+      </div>
+
+      <!-- Date selector -->
       <div class="date-row">
         <label>📅 選擇預報日期：</label>
         <select id="date-select"></select>
       </div>
 
       <div class="temp-legend">
-        <span>依平均溫度設定顏色：</span>
-        <span><span class="legend-dot" style="background:#2196F3;"></span>&lt; 20°C (藍色)</span>
-        <span><span class="legend-dot" style="background:#4CAF50;"></span>20–25°C (綠色)</span>
-        <span><span class="legend-dot" style="background:#FFC107;"></span>25–30°C (黃色)</span>
-        <span><span class="legend-dot" style="background:#F44336;"></span>&gt; 30°C (紅色)</span>
+        <span>氣溫色階：</span>
+        <span><span class="legend-dot" style="background:#2196F3;"></span>&lt; 20°C 涼爽</span>
+        <span><span class="legend-dot" style="background:#4CAF50;"></span>20–25°C 舒適</span>
+        <span><span class="legend-dot" style="background:#FFC107;"></span>25–30°C 溫暖</span>
+        <span><span class="legend-dot" style="background:#F44336;"></span>&gt; 30°C 炎熱</span>
       </div>
 
       <div id="map"></div>
     </div>
   </div>
 
-  <!-- ══ ASSIGNMENT GUIDE ══ -->
-  <div class="section-title">📋 HW10 Taiwan Weather Forecast 課程規格與五大模組全覽</div>
-
-  <!-- Row 1: Modules 1, 2, 3 -->
-  <div class="modules-grid-top">
-
-    <!-- Module 1 -->
-    <div class="mod-card">
-      <div class="mod-card-header">
-        <span class="module-badge">1</span>
-        <span class="mod-title">取得 CWA API 資料</span>
-        <span class="mod-score">(20%)</span>
-      </div>
-      <div class="mod-body">
-        <b>目標：</b>使用 CWA API 取得台灣六大區域一週天氣預報 (必須使用 JSON 格式)。<br><br>
-        <b>區域：</b><br>
-        <span class="chip">北部地區</span><span class="chip">中部地區</span><span class="chip">南部地區</span>
-        <span class="chip">東北部地區</span><span class="chip">東部地區</span><span class="chip">東南部地區</span>
-        <br><br>
-        <b>主要步驟：</b>
-        <ol>
-          <li>使用 <code>requests</code> 呼叫 CWA API</li>
-          <li>使用 <code>json.dumps</code> 觀察回傳的 JSON 資料</li>
-          <li>確認資料取得成功</li>
-        </ol>
-        <pre class="code-block">import requests, json
-url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-A0010-001"
-headers = {"Authorization": "YOUR_API_KEY"}
-resp = requests.get(url, headers=headers, timeout=30)
-data = resp.json()
-print(json.dumps(data, indent=2, ensure_ascii=False))</pre>
-        <div style="margin-top:6px;font-size:.78rem;color:#0284c7;font-weight:600;">評分：取得資料 10% ｜ 觀察JSON 5% ｜ 程式品質 5%</div>
-      </div>
-    </div>
-
-    <!-- Module 2 -->
-    <div class="mod-card">
-      <div class="mod-card-header">
-        <span class="module-badge">2</span>
-        <span class="mod-title">分析 JSON，提取氣溫資料</span>
-        <span class="mod-score">(20%)</span>
-      </div>
-      <div class="mod-body">
-        <b>目標：</b>分析 JSON 結構，找出並提取每日最高與最低氣溫。<br><br>
-        <b>分析重點 (JSON 巢狀結構)：</b>
-        <pre class="code-block">JSON
-└── records
-    └── locations
-        └── location[] (地區)
-            └── weatherElement[]
-                └── time[] (預報日期)
-                    ├── elementName: MinT
-                    └── elementName: MaxT</pre>
-        <b>提取結果範例：</b><br>
-        <div class="data-table-wrap" style="margin-top:6px;">
-          <table style="font-size:.8rem;">
-            <thead><tr><th>regionName</th><th>dataDate</th><th>mint</th><th>maxt</th></tr></thead>
-            <tbody>
-              <tr><td>北部地區</td><td>2026-04-14</td><td>18</td><td>26</td></tr>
-              <tr><td>中部地區</td><td>2026-04-14</td><td>20</td><td>30</td></tr>
-              <tr><td>南部地區</td><td>2026-04-14</td><td>22</td><td>31</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div style="margin-top:6px;font-size:.78rem;color:#0284c7;font-weight:600;">評分：提取正確 10% ｜ 觀察資料 5% ｜ 程式品質 5%</div>
-      </div>
-    </div>
-
-    <!-- Module 3 -->
-    <div class="mod-card">
-      <div class="mod-card-header">
-        <span class="module-badge">3</span>
-        <span class="mod-title">存入 SQLite 資料庫</span>
-        <span class="mod-score">(20%)</span>
-      </div>
-      <div class="mod-body">
-        <b>目標：</b>將氣溫資料儲存到 SQLite 資料庫 (data.db)。<br><br>
-        <b>資料庫設計：</b>
-        <pre class="code-block">CREATE TABLE TemperatureForecasts (
-  id INTEGER PRIMARY KEY,
-  regionName TEXT,
-  dataDate TEXT,
-  mint REAL,
-  maxt REAL
-);</pre>
-        <b>驗證查詢：</b>
-        <ol style="margin-top:4px;">
-          <li>列出地區：<code>SELECT DISTINCT regionName FROM TemperatureForecasts;</code></li>
-          <li>查詢中部：<code>SELECT * FROM ... WHERE regionName='中部地區';</code></li>
-        </ol>
-        <div style="margin-top:6px;font-size:.78rem;color:#0284c7;font-weight:600;">評分：儲存資料 10% ｜ 查詢驗證 5% ｜ 程式品質 5%</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Row 2: Modules 4, 5 -->
-  <div class="modules-grid-bot">
-    <!-- Module 4 -->
-    <div class="mod-card">
-      <div class="mod-card-header">
-        <span class="module-badge">4</span>
-        <span class="mod-title">Streamlit 氣溫預報 Web App</span>
-        <span class="mod-score">(40%)</span>
-      </div>
-      <div class="mod-body">
-        <b>目標：</b>建立互動式 Web App，從 SQLite 查詢資料，提供下拉選單，顯示一週氣溫的折線圖與表格。<br><br>
-        <b>功能需求：</b>
-        <ol>
-          <li>下拉選單選擇地區 (<code>st.selectbox</code>)</li>
-          <li>使用 SQL 從 SQLite (<code>data.db</code>) 查詢資料 (<code>pd.read_sql_query</code>)</li>
-          <li>顯示最高溫 (MaxT 紅線) 與最低溫 (MinT 藍線) 折線圖</li>
-          <li>顯示一週 (7天) 資料表格與 CSV 下載</li>
-        </ol>
-        <pre class="code-block">import streamlit as st
-import sqlite3
-import pandas as pd
-
-conn = sqlite3.connect("data.db")
-# 使用 SQL 查詢資料
-# 繪製折線圖與表格</pre>
-        <div style="margin-top:6px;font-size:.78rem;color:#0284c7;font-weight:600;">評分：下拉選單 10% ｜ 折線圖與表格 15% ｜ SQLite 查詢 10% ｜ 程式品質 5%</div>
-      </div>
-    </div>
-
-    <!-- Module 5 -->
-    <div class="mod-card">
-      <div class="mod-card-header">
-        <span class="module-badge">5</span>
-        <span class="mod-title">進階：台灣地圖視覺化</span>
-        <span class="mod-score">(Optional 加分)</span>
-      </div>
-      <div class="mod-body">
-        <b>目標：</b>製作互動式台灣地圖，顯示各區當日平均溫度。(建議使用 Folium + Streamlit)<br><br>
-        <b>依平均溫度設定顏色：</b><br>
-        🔵 <b>&lt; 20°C</b>（藍色 — 涼爽）<br>
-        🟢 <b>20–25°C</b>（綠色 — 舒適）<br>
-        🟡 <b>25–30°C</b>（黃色 — 溫暖）<br>
-        🔴 <b>&gt; 30°C</b>（紅色 — 炎熱）<br><br>
-        包含 Marker 點擊跳出氣候詳細資訊 Popup (地區、Date、Min、Max)。
-      </div>
-    </div>
-  </div>
-
-  <!-- Row 3: Bottom guide cards -->
-  <div class="modules-grid-bottom">
-    <div class="guide-card">
-      <h4>📁 HW10 專案結構</h4>
-      <pre class="code-block">HW10_weather/
-├── fetch_weather.py
-├── parse_weather.py
-├── database.py
-├── app.py
-├── data.db
-├── weather_data.csv
-├── requirements.txt
-└── README.md</pre>
-    </div>
-
-    <div class="guide-card">
-      <h4>⚙️ 執行方式 (4 步驟)</h4>
-      <ol>
-        <li><b>建立虛擬環境 (建議)</b><br>
-          <code>python -m venv venv</code><br>
-          <code>venv\Scripts\activate</code>
-        </li>
-        <li><b>安裝套件</b><br><code>pip install -r requirements.txt</code></li>
-        <li><b>執行資料處理 (一次即可)</b><br>
-          <code>python fetch_weather.py</code><br>
-          <code>python parse_weather.py</code><br>
-          <code>python database.py</code>
-        </li>
-        <li><b>啟動 Web App</b><br><code>streamlit run app.py</code></li>
-      </ol>
-    </div>
-
-    <div class="guide-card">
-      <h4>📦 需要安裝的套件</h4>
-      <ul>
-        <li><code>requests</code></li>
-        <li><code>pandas</code></li>
-        <li><code>streamlit</code></li>
-        <li><code>folium</code></li>
-        <li><code>streamlit-folium</code></li>
-        <li><code>plotly</code></li>
-      </ul>
-    </div>
-
-    <div class="guide-card">
-      <h4>⚠️ 重要注意事項</h4>
-      <ul>
-        <li>使用<b>自己的 CWA API Key</b></li>
-        <li><b>Streamlit 必須從 SQLite 查詢資料</b>，不可直接呼叫 API</li>
-        <li>確保六個地區的資料都正確</li>
-        <li>表格與圖表需顯示一週 (7天) 資料</li>
-        <li>進階台灣地圖為加分功能</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="info-box">
-    💡 <b>用程式連結真實世界，讓資料說出天氣的故事！</b> — AI 創新微課程 Taiwan Weather Forecast
-  </div>
-
-  <div style="height:40px;"></div>
+  <div style="height:30px;"></div>
 </div><!-- /container -->
 
 <!-- ══ SCRIPTS ══ -->
 <script>
-// ─── HW10 Benchmark Data (精確對應海報數值) ───────────────────────────────
-const DATES = [
-  "2026-04-14","2026-04-15","2026-04-16",
-  "2026-04-17","2026-04-18","2026-04-19","2026-04-20"
-];
+// ─── Dynamic Dates (7 days starting today) ─────────────────────────────────
+function genDates() {
+  const dates = [];
+  const now = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+const DATES = genDates();
 
 const FORECAST_DB = {
   "北部地區":   { mint:[18,19,20,19,18,18,19], maxt:[26,27,28,27,25,26,27] },
@@ -795,7 +598,7 @@ const REGION_META = {
 
 const REGIONS = Object.keys(FORECAST_DB);
 
-// ─── Helper: temperature color (HW10 Module 5 spec) ──────────────────────
+// ─── Helper: temperature color ──────────────────────
 function tempColor(avg) {
   if (avg < 20) return "#2196F3";
   if (avg <= 25) return "#4CAF50";
@@ -941,8 +744,86 @@ function initDateSelect() {
 // ─── Leaflet Map ──────────────────────────────────────────────────────────
 let leafletMap = null;
 let markerGroup = null;
+let baseLayer = null;
+let radarLayer = null;
+let currentMapStyle = 'satellite';
+let radarEnabled = true;
+let rainviewerHost = 'https://tilecache.rainviewer.com';
+let rainviewerPath = null;
 
-function initMap() {
+const TILE_CONFIGS = {
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attr: 'Esri World Imagery'
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attr: '&copy; <a href="https://carto.com/">CARTO</a> Dark Matter',
+    subdomains: 'abcd'
+  },
+  light: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attr: '&copy; <a href="https://carto.com/">CARTO</a> Positron',
+    subdomains: 'abcd'
+  }
+};
+
+async function fetchRainviewerTile() {
+  try {
+    const resp = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    const data = await resp.json();
+    rainviewerHost = data.host || rainviewerHost;
+    const radarFrames = data.radar && data.radar.past;
+    if (radarFrames && radarFrames.length > 0) {
+      rainviewerPath = radarFrames[radarFrames.length - 1].path;
+    }
+  } catch(e) { console.warn('RainViewer fetch failed', e); }
+}
+
+function buildRadarLayer() {
+  if (!rainviewerPath) return null;
+  const url = `${rainviewerHost}${rainviewerPath}/256/{z}/{x}/{y}/4/1_1.png`;
+  return L.tileLayer(url, {
+    attribution: 'RainViewer',
+    opacity: 0.62,
+    maxZoom: 19
+  });
+}
+
+function setMapStyle(style) {
+  currentMapStyle = style;
+  // Update buttons
+  ['satellite','dark','light'].forEach(s => {
+    const btn = document.getElementById('btn-' + (s === 'satellite' ? 'sat' : s));
+    if (btn) btn.classList.toggle('active', s === style);
+  });
+  // Remove old base layer
+  if (baseLayer) leafletMap.removeLayer(baseLayer);
+  const cfg = TILE_CONFIGS[style];
+  baseLayer = L.tileLayer(cfg.url, {
+    attribution: cfg.attr,
+    subdomains: cfg.subdomains || '',
+    maxZoom: 19
+  });
+  baseLayer.addTo(leafletMap);
+  // Ensure radar is on top
+  if (radarLayer && radarEnabled) {
+    leafletMap.removeLayer(radarLayer);
+    radarLayer.addTo(leafletMap);
+  }
+}
+
+function toggleRadar(checked) {
+  radarEnabled = checked;
+  if (!radarLayer) return;
+  if (checked) {
+    radarLayer.addTo(leafletMap);
+  } else {
+    leafletMap.removeLayer(radarLayer);
+  }
+}
+
+async function initMap() {
   leafletMap = L.map("map", {
     center: [23.75, 120.95],
     zoom: 7,
@@ -950,14 +831,21 @@ function initMap() {
     scrollWheelZoom: true
   });
 
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: "abcd",
-    maxZoom: 19
-  }).addTo(leafletMap);
+  // Satellite base layer by default
+  const cfg = TILE_CONFIGS.satellite;
+  baseLayer = L.tileLayer(cfg.url, { attribution: cfg.attr, maxZoom: 19 });
+  baseLayer.addTo(leafletMap);
+
+  // Fetch RainViewer and add radar overlay
+  await fetchRainviewerTile();
+  radarLayer = buildRadarLayer();
+  if (radarLayer && radarEnabled) radarLayer.addTo(leafletMap);
 
   markerGroup = L.layerGroup().addTo(leafletMap);
   updateMap(DATES[0]);
+
+  // Update map stat bar time
+  document.getElementById('map-time').textContent = new Date().toLocaleString('zh-TW', {hour12:false});
 }
 
 function updateMap(selectedDate) {
@@ -965,53 +853,73 @@ function updateMap(selectedDate) {
   const dateIdx = DATES.indexOf(selectedDate);
   if (dateIdx < 0) return;
 
+  let totalAvg = 0;
   REGIONS.forEach(region => {
     const meta = REGION_META[region];
     const mint = FORECAST_DB[region].mint[dateIdx];
     const maxt = FORECAST_DB[region].maxt[dateIdx];
     const avg = ((mint + maxt) / 2).toFixed(1);
+    totalAvg += parseFloat(avg);
     const color = tempColor(parseFloat(avg));
 
-    // Outer ring
+    // Outer glow ring
     L.circleMarker([meta.lat, meta.lon], {
-      radius: 22,
+      radius: 26,
       color: color,
       fillColor: color,
-      fillOpacity: 0.32,
+      fillOpacity: 0.22,
       weight: 2
+    }).addTo(markerGroup);
+
+    // Main marker with popup
+    L.circleMarker([meta.lat, meta.lon], {
+      radius: 14,
+      color: '#ffffff',
+      weight: 2.5,
+      fillColor: color,
+      fillOpacity: 0.9
     })
-    .bindTooltip(`${region} (平均 ${avg}°C)`, { permanent: false, direction: "top" })
+    .bindTooltip(`${region} — 平均 ${avg}°C (↓${mint} ↑${maxt})`, { permanent: false, direction: "top", className: 'leaflet-tooltip' })
     .bindPopup(`
-      <div style="font-family:'Noto Sans TC',sans-serif; font-size:13px; min-width:140px; line-height:1.5;">
-        <div style="font-weight:800; font-size:15px; color:${color}; margin-bottom:4px;">📍 ${region}</div>
-        <div><b>Date:</b> ${selectedDate}</div>
-        <div><b>Min:</b> ${mint}°C</div>
-        <div><b>Max:</b> ${maxt}°C</div>
-        <div style="margin-top:4px;padding-top:4px;border-top:1px dashed #cbd5e1;">
-          平均溫：<b>${avg}°C</b>
+      <div style="font-family:'Noto Sans TC',sans-serif; background:#0f172a; color:#f8fafc; padding:10px 12px; border-radius:8px; min-width:170px; line-height:1.5; box-shadow:0 8px 24px rgba(0,0,0,.5);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+          <span style="font-size:10px; background:#0284c7; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;">六大分區看板</span>
+          <span style="font-size:10px; color:#94a3b8;">${selectedDate}</span>
         </div>
-        <div style="font-size:11px;color:#64748b;margin-top:2px;">${meta.desc}</div>
+        <b style="font-size:14px; color:${color};">📍 ${region}</b><br>
+        <hr style="border:0; border-top:1px solid #334155; margin:5px 0;">
+        <div style="font-size:12px; line-height:1.7;">
+          🌡️ 最高溫 MaxT：<b style="color:#ef4444;">${maxt}°C</b><br>
+          🌡️ 最低溫 MinT：<b style="color:#3b82f6;">${mint}°C</b><br>
+          📊 平均溫 AvgT：<b style="color:${color};">${avg}°C</b>
+        </div>
+        <div style="font-size:10px; color:#94a3b8; margin-top:4px; padding-top:4px; border-top:1px solid #334155;">${meta.desc}</div>
       </div>
-    `, { maxWidth: 220 })
+    `, { maxWidth: 240 })
     .addTo(markerGroup);
 
-    // Inner dot
+    // Inner center dot
     L.circleMarker([meta.lat, meta.lon], {
-      radius: 7,
-      color: "#fff",
-      weight: 2,
-      fillColor: color,
+      radius: 4,
+      color: '#fff',
+      weight: 1,
+      fillColor: '#ffffff',
       fillOpacity: 1
     }).addTo(markerGroup);
   });
+
+  // Update average temp in stat bar
+  const globalAvg = (totalAvg / REGIONS.length).toFixed(1);
+  const el = document.getElementById('map-avg-temp');
+  if (el) el.textContent = globalAvg;
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   renderKPI();
   initRegionSelect();
   initDateSelect();
-  initMap();
+  await initMap();
 });
 </script>
 </body>

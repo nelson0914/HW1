@@ -1,4 +1,4 @@
-# ⛅ HW10 Taiwan Weather Forecast 從氣象資料到互動式天氣預報應用程式
+# ⛅ Taiwan Weather Forecast 從氣象資料到互動式天氣預報應用程式
 
 > **核心技術**：`CWA API` × `JSON` × `Python` × `SQLite` × `Streamlit`  
 > **核心資料流**：資料獲取 ➔ 資料分析 ➔ 資料儲存 ➔ 資料查詢 ➔ 視覺化展示  
@@ -8,7 +8,7 @@
 
 ## 📌 專案簡介 (Overview)
 
-本專案依據 **HW10 Taiwan Weather Forecast** 規格完整開發，串接交通部中央氣象署 (CWA) 開放資料 API，經由 Python 進行階層式 JSON 分析清洗，持久化儲存至 SQLite 資料庫，並使用 Streamlit 建立具備互動式折線圖、7 天預報表格與 Folium 台灣地圖四段溫度色彩階層之氣象儀表板。
+本專案依據 **Taiwan Weather Forecast** 規格完整開發，串接交通部中央氣象署 (CWA) 開放資料 API，經由 Python 進行階層式 JSON 分析清洗，持久化儲存至 SQLite 資料庫，並使用 Streamlit 建立具備互動式折線圖、7 天預報表格與全球衛星雲圖/AirBox 物聯網風格之氣象儀表板。
 
 ```text
 [ 📡 CWA Open Data (F-A0010-001) ] ➔ [ 📄 JSON (7-day forecast) ] ➔ [ 🐍 Python (analysis & parsing) ] ➔ [ 🗄️ SQLite (data.db) ] ➔ [ 🎈 Streamlit (web app) ] ➔ [ 🌤️ Taiwan Weather Dashboard ]
@@ -103,10 +103,10 @@
 
 ## 📂 專案檔案結構 (Project Structure)
 
-完全依循 HW10 官方標準目錄設計：
+標準目錄設計：
 
 ```text
-HW10_weather/
+weather_app/
 ├── fetch_weather.py   # [模組 1] 呼叫 CWA API 取得原始預報 JSON
 ├── parse_weather.py   # [模組 2] 分析 JSON 階層結構，提取 MinT 與 MaxT
 ├── database.py        # [模組 3] 建立 SQLite 資料庫與執行驗證查詢
